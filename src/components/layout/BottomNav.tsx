@@ -18,12 +18,16 @@ const navItems = [
   { path: "/perfil", icon: User, label: "Perfil" },
 ];
 
-export function BottomNav() {
+interface BottomNavProps {
+  className?: string;
+}
+
+export function BottomNav({ className }: BottomNavProps) {
   const location = useLocation();
   const navigate = useNavigate();
 
   return (
-    <nav className="bottom-nav">
+    <nav className={cn("bottom-nav", className)}>
       <div className="flex items-center justify-around max-w-lg mx-auto">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path || 

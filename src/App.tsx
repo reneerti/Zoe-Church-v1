@@ -9,6 +9,7 @@ import Biblia from "./pages/Biblia";
 import LivroCapitulos from "./pages/LivroCapitulos";
 import LeituraCapitulo from "./pages/LeituraCapitulo";
 import Harpa from "./pages/Harpa";
+import HinoDetalhes from "./pages/HinoDetalhes";
 import Agenda from "./pages/Agenda";
 import Devocional from "./pages/Devocional";
 import Ofertas from "./pages/Ofertas";
@@ -19,6 +20,7 @@ import Perfil from "./pages/Perfil";
 import Chat from "./pages/Chat";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import AdminImport from "./pages/AdminImport";
 
 const queryClient = new QueryClient();
 
@@ -36,7 +38,7 @@ const App = () => (
             <Route path="/biblia/:livro" element={<LivroCapitulos />} />
             <Route path="/biblia/:livro/:capitulo" element={<LeituraCapitulo />} />
             <Route path="/harpa" element={<Harpa />} />
-            <Route path="/harpa/:numero" element={<Harpa />} />
+            <Route path="/harpa/:numero" element={<HinoDetalhes />} />
             <Route path="/agenda" element={<Agenda />} />
             <Route path="/devocional" element={<Devocional />} />
             <Route path="/ofertas" element={<Ofertas />} />
@@ -45,6 +47,7 @@ const App = () => (
             <Route path="/novos-convertidos" element={<NovosConvertidos />} />
             <Route path="/perfil" element={<Perfil />} />
             <Route path="/chat" element={<Chat />} />
+            <Route path="/admin/import" element={<AdminImport />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
