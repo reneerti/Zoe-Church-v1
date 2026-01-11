@@ -5,6 +5,8 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Bell, BellOff, X } from 'lucide-react';
 import { Card } from '@/components/ui/card';
+import { useFCM } from '@/hooks/useFCM';
+import { isFirebaseConfigured } from '@/lib/firebase';
 
 // Verifica se o navegador suporta notificações
 const supportsNotifications = 'Notification' in window;
