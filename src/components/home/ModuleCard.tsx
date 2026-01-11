@@ -7,7 +7,7 @@ interface ModuleCardProps {
   description: string;
   icon: LucideIcon;
   path: string;
-  variant: 'bible' | 'harpa' | 'agenda' | 'devocional' | 'ofertas' | 'videos' | 'lideranca' | 'convertidos';
+  variant: 'bible' | 'harpa' | 'agenda' | 'devocional' | 'ofertas' | 'videos' | 'lideranca' | 'convertidos' | 'planos';
   className?: string;
   delay?: number;
 }

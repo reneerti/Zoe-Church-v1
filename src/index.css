@@ -42,30 +42,33 @@
 
     --radius: 1rem;
 
-    /* Custom Colors for Modules */
-    --bible: 239 84% 67%;
+    /* Custom Colors for Modules - Modern & Light */
+    --bible: 217 91% 60%;
     --bible-foreground: 0 0% 100%;
     
-    --harpa: 280 65% 60%;
+    --harpa: 271 81% 56%;
     --harpa-foreground: 0 0% 100%;
     
-    --agenda: 160 84% 39%;
+    --agenda: 173 80% 40%;
     --agenda-foreground: 0 0% 100%;
     
-    --devocional: 38 92% 50%;
+    --devocional: 25 95% 53%;
     --devocional-foreground: 0 0% 100%;
     
-    --ofertas: 340 75% 55%;
+    --ofertas: 339 90% 51%;
     --ofertas-foreground: 0 0% 100%;
     
-    --videos: 4 90% 58%;
+    --videos: 0 84% 60%;
     --videos-foreground: 0 0% 100%;
     
     --lideranca: 199 89% 48%;
     --lideranca-foreground: 0 0% 100%;
     
-    --convertidos: 142 71% 45%;
+    --convertidos: 142 76% 36%;
     --convertidos-foreground: 0 0% 100%;
+    
+    --planos: 262 83% 58%;
+    --planos-foreground: 0 0% 100%;
 
     /* Highlight Colors for Bible */
     --highlight-yellow: 48 96% 89%;
@@ -235,6 +238,11 @@
   .module-card-convertidos {
     @apply bg-gradient-to-br from-[hsl(var(--convertidos))] to-[hsl(var(--convertidos)/0.8)];
     @apply text-[hsl(var(--convertidos-foreground))];
+  }
+
+  .module-card-planos {
+    @apply bg-gradient-to-br from-[hsl(var(--planos))] to-[hsl(var(--planos)/0.8)];
+    @apply text-[hsl(var(--planos-foreground))];
   }
 
   /* Glass Effect */
