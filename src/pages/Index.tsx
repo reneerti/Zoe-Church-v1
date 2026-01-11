@@ -9,7 +9,8 @@ import {
   Users,
   UserPlus,
   Shield,
-  Settings
+  Settings,
+  BookMarked
 } from "lucide-react";
 import { Header } from "@/components/layout/Header";
 import { PageContainer } from "@/components/layout/PageContainer";
@@ -28,6 +29,13 @@ const modules = [
     description: "Leia, marque e estude a Palavra de Deus",
     icon: BookOpen,
     path: "/biblia",
+    variant: "bible" as const,
+  },
+  {
+    title: "Planos de Leitura",
+    description: "Siga planos organizados para ler a Bíblia",
+    icon: BookMarked,
+    path: "/planos",
     variant: "bible" as const,
   },
   {

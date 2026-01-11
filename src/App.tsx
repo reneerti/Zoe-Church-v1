@@ -13,6 +13,7 @@ import LeituraCapitulo from "./pages/LeituraCapitulo";
 import BuscaBiblia from "./pages/BuscaBiblia";
 import Harpa from "./pages/Harpa";
 import HinoDetalhes from "./pages/HinoDetalhes";
+import HinoApresentacao from "./pages/HinoApresentacao";
 import Agenda from "./pages/Agenda";
 import Devocional from "./pages/Devocional";
 import Ofertas from "./pages/Ofertas";
@@ -56,7 +57,8 @@ const App = () => (
               <Route path="/biblia/:bookId" element={<AuthenticatedRoute><LivroCapitulos /></AuthenticatedRoute>} />
               <Route path="/biblia/:bookId/:chapter" element={<AuthenticatedRoute><LeituraCapitulo /></AuthenticatedRoute>} />
               <Route path="/harpa" element={<AuthenticatedRoute><Harpa /></AuthenticatedRoute>} />
-              <Route path="/harpa/:hinoId" element={<AuthenticatedRoute><HinoDetalhes /></AuthenticatedRoute>} />
+              <Route path="/harpa/:numero" element={<AuthenticatedRoute><HinoDetalhes /></AuthenticatedRoute>} />
+              <Route path="/harpa/:numero/apresentar" element={<AuthenticatedRoute><HinoApresentacao /></AuthenticatedRoute>} />
               <Route path="/agenda" element={<AuthenticatedRoute><Agenda /></AuthenticatedRoute>} />
               <Route path="/devocional" element={<AuthenticatedRoute><Devocional /></AuthenticatedRoute>} />
               <Route path="/ofertas" element={<AuthenticatedRoute><Ofertas /></AuthenticatedRoute>} />

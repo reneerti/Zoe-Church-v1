@@ -4,7 +4,7 @@ import {
   BookOpen, 
   Music, 
   Calendar, 
-  Heart,
+  BookMarked,
   User
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -12,9 +12,8 @@ import { cn } from "@/lib/utils";
 const navItems = [
   { path: "/", icon: Home, label: "Início" },
   { path: "/biblia", icon: BookOpen, label: "Bíblia" },
+  { path: "/planos", icon: BookMarked, label: "Planos" },
   { path: "/harpa", icon: Music, label: "Harpa" },
-  { path: "/agenda", icon: Calendar, label: "Agenda" },
-  { path: "/devocional", icon: Heart, label: "Devocional" },
   { path: "/perfil", icon: User, label: "Perfil" },
 ];
 
