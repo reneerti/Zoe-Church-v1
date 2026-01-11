@@ -21,6 +21,9 @@ import Chat from "./pages/Chat";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import AdminImport from "./pages/AdminImport";
+import AdminDashboard from "./pages/admin/Dashboard";
+import AdminConvites from "./pages/admin/Convites";
+import AceitarConvite from "./pages/AceitarConvite";
 
 const queryClient = new QueryClient();
 
@@ -47,7 +50,10 @@ const App = () => (
             <Route path="/novos-convertidos" element={<NovosConvertidos />} />
             <Route path="/perfil" element={<Perfil />} />
             <Route path="/chat" element={<Chat />} />
+            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin/unidade/:unidadeId/convites" element={<AdminConvites />} />
             <Route path="/admin/import" element={<AdminImport />} />
+            <Route path="/convite/:codigo" element={<AceitarConvite />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
