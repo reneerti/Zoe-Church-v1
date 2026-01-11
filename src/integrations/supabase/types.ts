@@ -430,6 +430,8 @@ export type Database = {
           created_at: string
           id: string
           text: string
+          texto_normalizado: string | null
+          texto_tsv: unknown
           verse: number
           version_id: string
         }
@@ -439,6 +441,8 @@ export type Database = {
           created_at?: string
           id?: string
           text: string
+          texto_normalizado?: string | null
+          texto_tsv?: unknown
           verse: number
           version_id: string
         }
@@ -448,6 +452,8 @@ export type Database = {
           created_at?: string
           id?: string
           text?: string
+          texto_normalizado?: string | null
+          texto_tsv?: unknown
           verse?: number
           version_id?: string
         }
@@ -889,6 +895,287 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      planos_leitura: {
+        Row: {
+          created_at: string | null
+          criado_por: string | null
+          data_fim: string | null
+          data_inicio: string | null
+          descricao: string | null
+          duracao_dias: number
+          id: string
+          imagem_url: string | null
+          inclui_domingo: boolean | null
+          inclui_sabado: boolean | null
+          leituras_por_dia: number | null
+          publicado_em: string | null
+          status: string | null
+          tipo: string
+          titulo: string
+          total_concluidos: number | null
+          total_inscritos: number | null
+          unidade_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          criado_por?: string | null
+          data_fim?: string | null
+          data_inicio?: string | null
+          descricao?: string | null
+          duracao_dias?: number
+          id?: string
+          imagem_url?: string | null
+          inclui_domingo?: boolean | null
+          inclui_sabado?: boolean | null
+          leituras_por_dia?: number | null
+          publicado_em?: string | null
+          status?: string | null
+          tipo?: string
+          titulo: string
+          total_concluidos?: number | null
+          total_inscritos?: number | null
+          unidade_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          criado_por?: string | null
+          data_fim?: string | null
+          data_inicio?: string | null
+          descricao?: string | null
+          duracao_dias?: number
+          id?: string
+          imagem_url?: string | null
+          inclui_domingo?: boolean | null
+          inclui_sabado?: boolean | null
+          leituras_por_dia?: number | null
+          publicado_em?: string | null
+          status?: string | null
+          tipo?: string
+          titulo?: string
+          total_concluidos?: number | null
+          total_inscritos?: number | null
+          unidade_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "planos_leitura_unidade_id_fkey"
+            columns: ["unidade_id"]
+            isOneToOne: false
+            referencedRelation: "unidades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      planos_leitura_inscricoes: {
+        Row: {
+          concluido_em: string | null
+          data_fim_prevista: string | null
+          data_inicio_usuario: string
+          id: string
+          inscrito_em: string | null
+          itens_concluidos: number | null
+          percentual_concluido: number | null
+          plano_id: string | null
+          status: string | null
+          total_itens: number | null
+          unidade_id: string | null
+          user_id: string
+        }
+        Insert: {
+          concluido_em?: string | null
+          data_fim_prevista?: string | null
+          data_inicio_usuario: string
+          id?: string
+          inscrito_em?: string | null
+          itens_concluidos?: number | null
+          percentual_concluido?: number | null
+          plano_id?: string | null
+          status?: string | null
+          total_itens?: number | null
+          unidade_id?: string | null
+          user_id: string
+        }
+        Update: {
+          concluido_em?: string | null
+          data_fim_prevista?: string | null
+          data_inicio_usuario?: string
+          id?: string
+          inscrito_em?: string | null
+          itens_concluidos?: number | null
+          percentual_concluido?: number | null
+          plano_id?: string | null
+          status?: string | null
+          total_itens?: number | null
+          unidade_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "planos_leitura_inscricoes_plano_id_fkey"
+            columns: ["plano_id"]
+            isOneToOne: false
+            referencedRelation: "planos_leitura"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "planos_leitura_inscricoes_unidade_id_fkey"
+            columns: ["unidade_id"]
+            isOneToOne: false
+            referencedRelation: "unidades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      planos_leitura_itens: {
+        Row: {
+          capitulo_fim: number | null
+          capitulo_inicio: number
+          data_prevista: string | null
+          dia_numero: number
+          id: string
+          livro_id: string | null
+          ordem: number | null
+          plano_id: string | null
+          referencia_texto: string
+          titulo_dia: string | null
+          versiculo_fim: number | null
+          versiculo_inicio: number | null
+        }
+        Insert: {
+          capitulo_fim?: number | null
+          capitulo_inicio: number
+          data_prevista?: string | null
+          dia_numero: number
+          id?: string
+          livro_id?: string | null
+          ordem?: number | null
+          plano_id?: string | null
+          referencia_texto: string
+          titulo_dia?: string | null
+          versiculo_fim?: number | null
+          versiculo_inicio?: number | null
+        }
+        Update: {
+          capitulo_fim?: number | null
+          capitulo_inicio?: number
+          data_prevista?: string | null
+          dia_numero?: number
+          id?: string
+          livro_id?: string | null
+          ordem?: number | null
+          plano_id?: string | null
+          referencia_texto?: string
+          titulo_dia?: string | null
+          versiculo_fim?: number | null
+          versiculo_inicio?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "planos_leitura_itens_livro_id_fkey"
+            columns: ["livro_id"]
+            isOneToOne: false
+            referencedRelation: "bible_books"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "planos_leitura_itens_plano_id_fkey"
+            columns: ["plano_id"]
+            isOneToOne: false
+            referencedRelation: "planos_leitura"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      planos_leitura_progresso: {
+        Row: {
+          anotacao: string | null
+          concluido: boolean | null
+          fonte: string | null
+          id: string
+          inscricao_id: string | null
+          item_id: string | null
+          marcado_em: string | null
+          user_id: string
+        }
+        Insert: {
+          anotacao?: string | null
+          concluido?: boolean | null
+          fonte?: string | null
+          id?: string
+          inscricao_id?: string | null
+          item_id?: string | null
+          marcado_em?: string | null
+          user_id: string
+        }
+        Update: {
+          anotacao?: string | null
+          concluido?: boolean | null
+          fonte?: string | null
+          id?: string
+          inscricao_id?: string | null
+          item_id?: string | null
+          marcado_em?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "planos_leitura_progresso_inscricao_id_fkey"
+            columns: ["inscricao_id"]
+            isOneToOne: false
+            referencedRelation: "planos_leitura_inscricoes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "planos_leitura_progresso_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "planos_leitura_itens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      planos_templates: {
+        Row: {
+          categoria: string | null
+          created_at: string | null
+          descricao: string | null
+          duracao_dias: number
+          id: string
+          is_active: boolean | null
+          leituras: Json
+          nivel: string | null
+          tipo: string
+          titulo: string
+        }
+        Insert: {
+          categoria?: string | null
+          created_at?: string | null
+          descricao?: string | null
+          duracao_dias: number
+          id?: string
+          is_active?: boolean | null
+          leituras?: Json
+          nivel?: string | null
+          tipo: string
+          titulo: string
+        }
+        Update: {
+          categoria?: string | null
+          created_at?: string | null
+          descricao?: string | null
+          duracao_dias?: number
+          id?: string
+          is_active?: boolean | null
+          leituras?: Json
+          nivel?: string | null
+          tipo?: string
+          titulo?: string
+        }
+        Relationships: []
       }
       posts: {
         Row: {
@@ -1590,6 +1877,80 @@ export type Database = {
         Args: { check_unidade_id: string }
         Returns: boolean
       }
+      buscar_biblia_exato: {
+        Args: {
+          limite?: number
+          livro_id_param?: string
+          pagina?: number
+          termo_busca: string
+          testamento_param?: string
+          versao_codigo?: string
+        }
+        Returns: {
+          capitulo: number
+          id: string
+          livro: string
+          livro_abrev: string
+          referencia: string
+          texto: string
+          versao: string
+          versiculo: number
+        }[]
+      }
+      buscar_biblia_palavras: {
+        Args: {
+          limite?: number
+          livro_id_param?: string
+          modo?: string
+          pagina?: number
+          termo_busca: string
+          testamento_param?: string
+          versao_codigo?: string
+        }
+        Returns: {
+          capitulo: number
+          id: string
+          livro: string
+          livro_abrev: string
+          referencia: string
+          relevancia: number
+          texto: string
+          versao: string
+          versiculo: number
+        }[]
+      }
+      buscar_biblia_prefixo: {
+        Args: { limite?: number; prefixo: string; versao_codigo?: string }
+        Returns: {
+          capitulo: number
+          id: string
+          livro: string
+          livro_abrev: string
+          referencia: string
+          texto: string
+          versao: string
+          versiculo: number
+        }[]
+      }
+      buscar_biblia_similar: {
+        Args: {
+          limite?: number
+          similaridade_minima?: number
+          termo_busca: string
+          versao_codigo?: string
+        }
+        Returns: {
+          capitulo: number
+          id: string
+          livro: string
+          livro_abrev: string
+          referencia: string
+          similaridade: number
+          texto: string
+          versao: string
+          versiculo: number
+        }[]
+      }
       buscar_cache_similar_global: {
         Args: {
           p_categoria?: string
@@ -1639,6 +2000,19 @@ export type Database = {
         Args: { p_pergunta: string }
         Returns: string
       }
+      gerar_plano_biblia_1_ano: {
+        Args: { p_data_inicio?: string; p_plano_id: string }
+        Returns: number
+      }
+      gerar_plano_livros: {
+        Args: {
+          p_capitulos_por_dia?: number
+          p_data_inicio?: string
+          p_livros_abreviacoes: string[]
+          p_plano_id: string
+        }
+        Returns: number
+      }
       get_user_unidade_id: { Args: never; Returns: string }
       incrementar_hit_cache: {
         Args: { p_cache_id: string }
@@ -1646,6 +2020,7 @@ export type Database = {
       }
       is_master_of: { Args: { check_unidade_id: string }; Returns: boolean }
       is_super_user: { Args: never; Returns: boolean }
+      normalizar_texto: { Args: { texto: string }; Returns: string }
       salvar_cache_versiculo: {
         Args: {
           p_capitulo: number
@@ -1659,6 +2034,9 @@ export type Database = {
         }
         Returns: string
       }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
+      unaccent: { Args: { "": string }; Returns: string }
       verificar_rate_limit: {
         Args: { p_unidade_id: string; p_user_id: string }
         Returns: {
