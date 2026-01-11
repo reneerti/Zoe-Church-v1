@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBibleBooks } from '@/hooks/useBibleData';
+import { sendPushToUnidade } from '@/hooks/useSendPushToUsers';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -192,6 +193,9 @@ export default function MasterPlanos() {
   
   const publicarPlano = async (planoId: string) => {
     try {
+      // Buscar dados do plano
+      const plano = planos.find(p => p.id === planoId);
+      
       const { error } = await supabase
         .from('planos_leitura')
         .update({ 
@@ -202,7 +206,28 @@ export default function MasterPlanos() {
       
       if (error) throw error;
       
-      toast.success('Plano publicado e disponível para inscrições!');
+      // Enviar push notification para todos os membros
+      if (unidadeId && plano) {
+        const pushResult = await sendPushToUnidade(
+          unidadeId,
+          '📖 Novo Plano de Leitura!',
+          `${plano.titulo} está disponível. Inscreva-se agora!`,
+          {
+            type: 'plano',
+            planoId: planoId,
+            url: `/planos/entrar/${plano.codigo_convite}`,
+          }
+        );
+
+        if (pushResult.sent > 0) {
+          toast.success(`Plano publicado! ${pushResult.sent} push notifications enviados.`);
+        } else {
+          toast.success('Plano publicado e disponível para inscrições!');
+        }
+      } else {
+        toast.success('Plano publicado e disponível para inscrições!');
+      }
+      
       fetchData();
       
     } catch (error) {
