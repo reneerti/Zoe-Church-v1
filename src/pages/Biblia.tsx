@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { ChevronLeft, Settings, Search, BookOpen } from "lucide-react";
+import { useState, useMemo } from "react";
+import { ChevronLeft, Settings, Search, BookOpen, TrendingUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { PageContainer } from "@/components/layout/PageContainer";
@@ -12,45 +12,50 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-const bibleVersions = [
-  { id: "nvi", name: "NVI" },
-  { id: "ntlh", name: "NTLH" },
-  { id: "ara", name: "ARA" },
-];
-
-const testaments = [
-  { id: "old", name: "Velho Testamento", books: 39 },
-  { id: "new", name: "Novo Testamento", books: 27 },
-];
-
-const oldTestamentBooks = [
-  "Gênesis", "Êxodo", "Levítico", "Números", "Deuteronômio",
-  "Josué", "Juízes", "Rute", "1 Samuel", "2 Samuel",
-  "1 Reis", "2 Reis", "1 Crônicas", "2 Crônicas", "Esdras",
-  "Neemias", "Ester", "Jó", "Salmos", "Provérbios",
-  "Eclesiastes", "Cantares", "Isaías", "Jeremias", "Lamentações",
-  "Ezequiel", "Daniel", "Oséias", "Joel", "Amós",
-  "Obadias", "Jonas", "Miquéias", "Naum", "Habacuque",
-  "Sofonias", "Ageu", "Zacarias", "Malaquias"
-];
-
-const newTestamentBooks = [
-  "Mateus", "Marcos", "Lucas", "João", "Atos",
-  "Romanos", "1 Coríntios", "2 Coríntios", "Gálatas", "Efésios",
-  "Filipenses", "Colossenses", "1 Tessalonicenses", "2 Tessalonicenses", "1 Timóteo",
-  "2 Timóteo", "Tito", "Filemom", "Hebreus", "Tiago",
-  "1 Pedro", "2 Pedro", "1 João", "2 João", "3 João",
-  "Judas", "Apocalipse"
-];
+import { useBibleBooks, useBibleVersions, useReadingProgress, getReadingIntensity, getIntensityColor, getIntensityBorder } from "@/hooks/useBibleData";
 
 export default function Biblia() {
   const navigate = useNavigate();
-  const [version, setVersion] = useState("nvi");
-  const [selectedTestament, setSelectedTestament] = useState<"old" | "new" | null>(null);
+  const [version, setVersion] = useState("NVI");
+  const [selectedTestament, setSelectedTestament] = useState<"AT" | "NT" | null>(null);
 
-  const books = selectedTestament === "old" ? oldTestamentBooks : 
-                selectedTestament === "new" ? newTestamentBooks : [];
+  const { data: versions = [] } = useBibleVersions();
+  const { data: books = [] } = useBibleBooks();
+  const { data: progress = [] } = useReadingProgress(); // Will be empty without auth
+
+  const testaments = [
+    { id: "AT" as const, name: "Velho Testamento", books: books.filter(b => b.testament === "AT").length || 39 },
+    { id: "NT" as const, name: "Novo Testamento", books: books.filter(b => b.testament === "NT").length || 27 },
+  ];
+
+  const filteredBooks = useMemo(() => {
+    if (!selectedTestament) return [];
+    return books.filter(b => b.testament === selectedTestament);
+  }, [books, selectedTestament]);
+
+  // Calculate progress by book
+  const bookProgress = useMemo(() => {
+    const progressMap: Record<string, { readChapters: number; totalReadCount: number }> = {};
+    
+    progress.forEach(p => {
+      if (!progressMap[p.book_id]) {
+        progressMap[p.book_id] = { readChapters: 0, totalReadCount: 0 };
+      }
+      progressMap[p.book_id].readChapters++;
+      progressMap[p.book_id].totalReadCount += p.read_count;
+    });
+    
+    return progressMap;
+  }, [progress]);
+
+  // Calculate total chapters read
+  const totalChaptersRead = useMemo(() => {
+    return progress.length;
+  }, [progress]);
+
+  const totalChapters = useMemo(() => {
+    return books.reduce((sum, b) => sum + b.chapters_count, 0);
+  }, [books]);
 
   return (
     <>
@@ -75,9 +80,13 @@ export default function Biblia() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {bibleVersions.map((v) => (
-                  <SelectItem key={v.id} value={v.id}>
-                    {v.name}
+                {(versions.length > 0 ? versions : [
+                  { code: "NVI", name: "NVI" },
+                  { code: "NTLH", name: "NTLH" },
+                  { code: "ARA", name: "ARA" },
+                ]).map((v) => (
+                  <SelectItem key={v.code} value={v.code}>
+                    {v.code}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -101,11 +110,11 @@ export default function Biblia() {
             {testaments.map((testament, index) => (
               <button
                 key={testament.id}
-                onClick={() => setSelectedTestament(testament.id as "old" | "new")}
+                onClick={() => setSelectedTestament(testament.id)}
                 className={cn(
                   "w-full p-5 rounded-2xl text-left transition-all duration-200",
                   "opacity-0 animate-fade-in hover:scale-[1.02] active:scale-[0.98]",
-                  testament.id === "old" 
+                  testament.id === "AT" 
                     ? "bg-gradient-to-br from-amber-500 to-orange-500 text-white"
                     : "bg-gradient-to-br from-primary to-secondary text-primary-foreground"
                 )}
@@ -125,14 +134,39 @@ export default function Biblia() {
 
             {/* Reading Progress */}
             <div className="mt-8 p-4 rounded-2xl bg-card border border-border">
-              <h3 className="font-semibold mb-3">Seu Progresso</h3>
+              <div className="flex items-center gap-2 mb-3">
+                <TrendingUp className="h-4 w-4 text-primary" />
+                <h3 className="font-semibold">Seu Progresso</h3>
+              </div>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Versículos lidos</span>
-                  <span className="font-medium">0 / 31.102</span>
+                  <span className="text-muted-foreground">Capítulos lidos</span>
+                  <span className="font-medium">{totalChaptersRead} / {totalChapters || 1189}</span>
                 </div>
                 <div className="h-2 bg-muted rounded-full overflow-hidden">
-                  <div className="h-full bg-primary rounded-full" style={{ width: "0%" }} />
+                  <div 
+                    className="h-full bg-gradient-to-r from-primary to-secondary rounded-full transition-all duration-500" 
+                    style={{ width: `${(totalChaptersRead / (totalChapters || 1189)) * 100}%` }} 
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Os cards mudam de cor conforme você lê mais frequentemente cada livro
+                </p>
+              </div>
+
+              {/* Color legend */}
+              <div className="mt-4 pt-3 border-t border-border">
+                <p className="text-xs text-muted-foreground mb-2">Frequência de leitura:</p>
+                <div className="flex items-center gap-1">
+                  <div className="flex-1 h-3 rounded bg-muted/30" />
+                  <div className="flex-1 h-3 rounded bg-primary/20" />
+                  <div className="flex-1 h-3 rounded bg-primary/40" />
+                  <div className="flex-1 h-3 rounded bg-primary/60" />
+                  <div className="flex-1 h-3 rounded bg-primary/80" />
+                </div>
+                <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
+                  <span>Nunca</span>
+                  <span>Frequente</span>
                 </div>
               </div>
             </div>
@@ -151,27 +185,45 @@ export default function Biblia() {
                 Voltar
               </Button>
               <h2 className="font-semibold">
-                {selectedTestament === "old" ? "Velho Testamento" : "Novo Testamento"}
+                {selectedTestament === "AT" ? "Velho Testamento" : "Novo Testamento"}
               </h2>
             </div>
 
             <div className="grid grid-cols-2 gap-2">
-              {books.map((book, index) => (
-                <button
-                  key={book}
-                  onClick={() => navigate(`/biblia/${book.toLowerCase().replace(/\s/g, "-")}`)}
-                  className={cn(
-                    "p-3 rounded-xl text-left transition-all duration-200",
-                    "bg-card border border-border hover:border-primary/50",
-                    "hover:shadow-md active:scale-[0.98]",
-                    "opacity-0 animate-fade-in"
-                  )}
-                  style={{ animationDelay: `${index * 20}ms` }}
-                >
-                  <span className="text-xs text-muted-foreground">{index + 1}</span>
-                  <h3 className="font-medium text-sm truncate">{book}</h3>
-                </button>
-              ))}
+              {filteredBooks.map((book, index) => {
+                const bp = bookProgress[book.id];
+                const readCount = bp?.totalReadCount || 0;
+                const intensity = getReadingIntensity(readCount);
+                const colorClass = getIntensityColor(intensity);
+                const borderClass = getIntensityBorder(intensity);
+                const chaptersRead = bp?.readChapters || 0;
+                
+                return (
+                  <button
+                    key={book.id}
+                    onClick={() => navigate(`/biblia/${book.name.toLowerCase().replace(/\s/g, "-")}`)}
+                    className={cn(
+                      "p-3 rounded-xl text-left transition-all duration-300",
+                      "border-2 hover:shadow-md active:scale-[0.98]",
+                      "opacity-0 animate-fade-in",
+                      colorClass,
+                      borderClass
+                    )}
+                    style={{ animationDelay: `${index * 20}ms` }}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-muted-foreground">{book.book_number}</span>
+                      {chaptersRead > 0 && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/20 text-primary font-medium">
+                          {chaptersRead}/{book.chapters_count}
+                        </span>
+                      )}
+                    </div>
+                    <h3 className="font-medium text-sm truncate">{book.name}</h3>
+                    <p className="text-xs text-muted-foreground">{book.chapters_count} cap.</p>
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}
