@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronLeft, Database, RefreshCw, Check, AlertCircle, BookOpen, Music, Library, Zap } from "lucide-react";
+import { ChevronLeft, Database, RefreshCw, Check, AlertCircle, BookOpen, Music, Library, Zap, Brain } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { PageContainer } from "@/components/layout/PageContainer";
@@ -15,6 +15,8 @@ interface ImportStatus {
   versoes: number;
   versiculos: number;
   hinos: number;
+  cache_versiculos?: number;
+  cache_perguntas?: number;
 }
 
 export default function AdminImport() {
@@ -300,6 +302,50 @@ export default function AdminImport() {
                   <>
                     <Zap className="h-4 w-4 mr-2" />
                     Importar Tudo
+                  </>
+                )}
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Cache de IA */}
+          <Card className="border-purple-500/30 bg-purple-500/5">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Brain className="h-4 w-4 text-purple-500" />
+                Cache Inicial de IA
+              </CardTitle>
+              <CardDescription>
+                Popula cache com 25+ versículos populares e 17+ perguntas frequentes
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {importing === 'populate-cache' && (
+                <div className="mb-3">
+                  <Progress value={progress} className="h-2" />
+                  <p className="text-xs text-muted-foreground mt-1">{Math.round(progress)}% concluído</p>
+                </div>
+              )}
+              {results['populate-cache'] && (
+                <div className={`flex items-center gap-2 text-sm mb-3 ${results['populate-cache'].success ? 'text-green-600' : 'text-red-600'}`}>
+                  {results['populate-cache'].success ? <Check className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
+                  {results['populate-cache'].message}
+                </div>
+              )}
+              <Button
+                onClick={() => importData('populate-cache', 'Cache de IA')}
+                disabled={importing !== null}
+                className="w-full bg-purple-600 hover:bg-purple-700"
+              >
+                {importing === 'populate-cache' ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    Populando Cache...
+                  </>
+                ) : (
+                  <>
+                    <Brain className="h-4 w-4 mr-2" />
+                    Popular Cache de IA
                   </>
                 )}
               </Button>
