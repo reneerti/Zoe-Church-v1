@@ -170,8 +170,28 @@ export default function ConvitesPage() {
 
       if (error) throw error;
 
-      // TODO: Enviar email via edge function
-      // await supabase.functions.invoke('send-convite-email', { body: { ... } });
+      // Buscar ID do convite recém-criado para enviar email
+      const { data: novoConvite } = await supabase
+        .from("convites")
+        .select("id")
+        .eq("codigo", codigo)
+        .single();
+
+      // Enviar email via edge function
+      if (novoConvite) {
+        try {
+          await supabase.functions.invoke('send-convite-email', {
+            body: { conviteId: novoConvite.id }
+          });
+          toast({
+            title: "Email enviado!",
+            description: `Convite enviado para ${formData.email}`,
+          });
+        } catch (emailError) {
+          console.error("Erro ao enviar email:", emailError);
+          // Não bloquear o fluxo se o email falhar
+        }
+      }
 
       toast({
         title: "Sucesso!",
