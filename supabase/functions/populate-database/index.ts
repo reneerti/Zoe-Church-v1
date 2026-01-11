@@ -322,9 +322,35 @@ serve(async (req) => {
       const batchNum = batch || 1;
       const booksPerBatch = 5;
       
+      // Buscar IDs da versão e dos livros
+      const { data: versionData } = await supabase
+        .from('bible_versions')
+        .select('id, code')
+        .eq('code', versionAbbr)
+        .single();
+      
+      if (!versionData) {
+        return new Response(
+          JSON.stringify({ success: false, message: `Versão ${versionAbbr} não encontrada. Importe as versões primeiro.` }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+        );
+      }
+
+      const { data: booksData } = await supabase
+        .from('bible_books')
+        .select('id, abbreviation, chapters_count')
+        .order('book_number');
+      
+      if (!booksData || booksData.length === 0) {
+        return new Response(
+          JSON.stringify({ success: false, message: 'Livros não encontrados. Importe os livros primeiro.' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+        );
+      }
+
       const start = (batchNum - 1) * booksPerBatch;
       const end = start + booksPerBatch;
-      const booksBatch = bibleBooks.slice(start, end);
+      const booksBatch = booksData.slice(start, end);
       
       if (booksBatch.length === 0) {
         return new Response(
@@ -335,13 +361,26 @@ serve(async (req) => {
 
       let totalVerses = 0;
       for (const book of booksBatch) {
-        for (let chapter = 1; chapter <= book.chapters; chapter++) {
-          const verses = generateBibleVerses(book.abbreviation, chapter, versionAbbr);
+        for (let chapter = 1; chapter <= book.chapters_count; chapter++) {
+          // Gerar versículos com IDs corretos
+          const verseCount = 25; // Padrão
+          const verses = [];
+          
+          for (let v = 1; v <= verseCount; v++) {
+            verses.push({
+              book_id: book.id,
+              version_id: versionData.id,
+              chapter: chapter,
+              verse: v,
+              text: `E o Senhor falou: "Eu sou o vosso Deus, e vós sois meu povo." [${book.abbreviation} ${chapter}:${v} ${versionAbbr}]`
+            });
+          }
           
           const { error } = await supabase
             .from('bible_verses')
             .upsert(verses, { 
-              onConflict: 'book_abbreviation,chapter_number,verse_number,version_abbreviation' 
+              onConflict: 'book_id,version_id,chapter,verse',
+              ignoreDuplicates: true
             });
 
           if (error) {
@@ -351,7 +390,7 @@ serve(async (req) => {
         }
       }
 
-      const hasMore = end < bibleBooks.length;
+      const hasMore = end < booksData.length;
       return new Response(
         JSON.stringify({ 
           success: true, 
