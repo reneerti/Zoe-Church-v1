@@ -7,7 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { BookOpen, Mail, Lock, User, Loader2 } from 'lucide-react';
+import { Mail, Lock, User, Loader2 } from 'lucide-react';
+import logoZoe from '@/assets/logo-zoe.png';
 
 const Auth = () => {
   const { user, signIn, signUp, signInWithGoogle, loading } = useAuth();
@@ -93,10 +94,11 @@ const Auth = () => {
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-b from-primary/5 to-background">
       <div className="w-full max-w-md">
         <div className="flex flex-col items-center mb-8">
-          <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mb-4">
-            <BookOpen className="w-8 h-8 text-primary-foreground" />
-          </div>
-          <h1 className="text-2xl font-bold text-foreground">Minha Igreja</h1>
+          <img 
+            src={logoZoe} 
+            alt="Zoe Church" 
+            className="w-40 h-auto mb-4"
+          />
           <p className="text-muted-foreground">Sua vida espiritual em um só lugar</p>
         </div>
 

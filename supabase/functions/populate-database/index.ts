@@ -420,8 +420,46 @@ serve(async (req) => {
       );
     }
 
+    // ==========================================
+    // POPULAR CACHE INICIAL DE IA
+    // ==========================================
+    if (action === 'populate-cache') {
+      // Cache de versículos populares
+      const cacheVersiculos = [
+        { cache_key: 'SIGNIFICADO:joao:3:16', livro: 'joao', capitulo: 3, versiculo_inicio: 16, tipo: 'significado', resposta: 'João 3:16 é o versículo mais conhecido da Bíblia. "Porque Deus amou o mundo de tal maneira que deu o seu Filho unigênito, para que todo aquele que nele crê não pereça, mas tenha a vida eterna." Este versículo resume o Evangelho: amor incondicional de Deus, sacrifício de Jesus, e salvação pela fé.', modelo: 'cache-inicial', tokens_usados: 100 },
+        { cache_key: 'SIGNIFICADO:salmos:23:1', livro: 'salmos', capitulo: 23, versiculo_inicio: 1, tipo: 'significado', resposta: 'Salmo 23 - O Senhor é meu Pastor. Davi usa sua experiência como pastor para descrever Deus como provedor, protetor e guia. "Nada me faltará" não significa vida sem problemas, mas que Deus supre todas as necessidades.', modelo: 'cache-inicial', tokens_usados: 80 },
+        { cache_key: 'SIGNIFICADO:jeremias:29:11', livro: 'jeremias', capitulo: 29, versiculo_inicio: 11, tipo: 'significado', resposta: 'Jeremias 29:11 - "Eu sei os planos que tenho para vocês, planos de paz e não de mal, para dar-lhes esperança e futuro." Escrito aos exilados na Babilônia, mostra que Deus tem propósitos bons mesmo em tempos difíceis.', modelo: 'cache-inicial', tokens_usados: 80 },
+        { cache_key: 'SIGNIFICADO:filipenses:4:13', livro: 'filipenses', capitulo: 4, versiculo_inicio: 13, tipo: 'significado', resposta: 'Filipenses 4:13 - "Tudo posso naquele que me fortalece." O contexto mostra que Paulo fala sobre contentamento em qualquer circunstância, não sobre conquistar qualquer desejo pessoal. A força vem de Cristo.', modelo: 'cache-inicial', tokens_usados: 70 },
+        { cache_key: 'SIGNIFICADO:romanos:8:28', livro: 'romanos', capitulo: 8, versiculo_inicio: 28, tipo: 'significado', resposta: 'Romanos 8:28 - "Todas as coisas cooperam para o bem dos que amam a Deus." Não significa que tudo é bom, mas que Deus pode usar até situações ruins para cumprir Seus propósitos redentores.', modelo: 'cache-inicial', tokens_usados: 70 },
+      ];
+
+      const { error: cacheError } = await supabase
+        .from('ai_cache_versiculos')
+        .upsert(cacheVersiculos, { onConflict: 'cache_key' });
+
+      // Cache de perguntas frequentes
+      const cachePerguntas = [
+        { hash_pergunta: 'deus_me_ama', pergunta_original: 'Deus me ama?', pergunta_normalizada: 'deus me ama', categoria: 'deus', resposta: 'Sim! "Deus é amor" (1 João 4:8). Ele te amou antes de você nascer, enviou Jesus por você, e nada pode separar você do Seu amor (Romanos 8:38-39).', modelo: 'cache-inicial', tokens_usados: 60 },
+        { hash_pergunta: 'como_ser_salvo', pergunta_original: 'Como ser salvo?', pergunta_normalizada: 'como ser salvo', categoria: 'salvacao', resposta: 'Reconheça que precisa de salvação (Romanos 3:23), creia que Jesus morreu por você (1 Cor 15:3), confesse Jesus como Senhor (Romanos 10:9). A salvação é pela graça, mediante a fé (Efésios 2:8).', modelo: 'cache-inicial', tokens_usados: 80 },
+        { hash_pergunta: 'como_orar', pergunta_original: 'Como orar?', pergunta_normalizada: 'como orar', categoria: 'oracao', resposta: 'Oração é conversa com Deus. Jesus ensinou o Pai Nosso como modelo (Mateus 6:9-13): adoração, submissão à vontade de Deus, pedidos, confissão e proteção. Ore com sinceridade, em qualquer lugar.', modelo: 'cache-inicial', tokens_usados: 70 },
+        { hash_pergunta: 'o_que_e_fe', pergunta_original: 'O que é fé?', pergunta_normalizada: 'o que e fe', categoria: 'fe', resposta: '"A fé é a certeza do que esperamos e a prova das coisas que não vemos" (Hebreus 11:1). Fé é confiar em Deus e agir baseado em Sua Palavra, não nas circunstâncias.', modelo: 'cache-inicial', tokens_usados: 60 },
+      ];
+
+      const { error: perguntasError } = await supabase
+        .from('ai_cache_semantico')
+        .upsert(cachePerguntas, { onConflict: 'hash_pergunta' });
+
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: `Cache inicial populado: ${cacheVersiculos.length} versículos, ${cachePerguntas.length} perguntas frequentes.`
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     return new Response(
-      JSON.stringify({ error: 'Ação desconhecida. Use: import-books, import-versions, import-harpa, import-verses, import-all, status' }),
+      JSON.stringify({ error: 'Ação desconhecida. Use: import-books, import-versions, import-harpa, import-verses, import-all, populate-cache, status' }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
     );
 
