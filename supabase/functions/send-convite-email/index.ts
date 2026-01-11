@@ -2,8 +2,6 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "https://esm.sh/resend@2.0.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
-
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -12,6 +10,7 @@ const corsHeaders = {
 
 interface ConviteEmailRequest {
   conviteId: string;
+  useMagicLink?: boolean;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -24,7 +23,10 @@ const handler = async (req: Request): Promise<Response> => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { conviteId }: ConviteEmailRequest = await req.json();
+    const resendApiKey = Deno.env.get("RESEND_API_KEY");
+    const resend = resendApiKey ? new Resend(resendApiKey) : null;
+
+    const { conviteId, useMagicLink = true }: ConviteEmailRequest = await req.json();
 
     // Buscar dados do convite
     const { data: convite, error: conviteError } = await supabase
@@ -41,7 +43,29 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const unidade = convite.unidades as any;
-    const conviteLink = `${Deno.env.get("SITE_URL") || "https://preview--allfhenlhsjkuatczato.lovable.app"}/convite/${convite.codigo}`;
+    const siteUrl = Deno.env.get("SITE_URL") || "https://e9720ae1-5e87-4354-9d1c-a137d03be29d.lovableproject.com";
+    
+    let loginLink = `${siteUrl}/convite/${convite.codigo}`;
+    let emailSent = false;
+
+    // Se usar magic link, gerar link de login direto
+    if (useMagicLink) {
+      // Gerar magic link usando Supabase Auth
+      const { data: magicLinkData, error: magicLinkError } = await supabase.auth.admin.generateLink({
+        type: "magiclink",
+        email: convite.email,
+        options: {
+          redirectTo: `${siteUrl}/convite/${convite.codigo}`,
+        }
+      });
+
+      if (!magicLinkError && magicLinkData?.properties?.action_link) {
+        loginLink = magicLinkData.properties.action_link;
+        console.log("Magic link gerado com sucesso");
+      } else {
+        console.log("Erro ao gerar magic link, usando link normal:", magicLinkError);
+      }
+    }
 
     // Template de email
     const emailHtml = `
@@ -85,16 +109,18 @@ const handler = async (req: Request): Promise<Response> => {
               </p>
               
               <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 0 0 30px 0;">
-                Clique no botão abaixo para aceitar o convite e começar sua jornada espiritual:
+                ${useMagicLink 
+                  ? 'Clique no botão abaixo para entrar automaticamente e começar sua jornada espiritual:' 
+                  : 'Clique no botão abaixo para aceitar o convite e começar sua jornada espiritual:'}
               </p>
               
               <!-- CTA Button -->
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td align="center">
-                    <a href="${conviteLink}" 
+                    <a href="${loginLink}" 
                        style="display: inline-block; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 12px; font-size: 16px; font-weight: 600; box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);">
-                      Aceitar Convite
+                      ${useMagicLink ? 'Entrar Agora' : 'Aceitar Convite'}
                     </a>
                   </td>
                 </tr>
@@ -136,29 +162,85 @@ const handler = async (req: Request): Promise<Response> => {
 </html>
     `;
 
-    // Enviar email
-    const emailResponse = await resend.emails.send({
-      from: `${unidade.apelido_app} <onboarding@resend.dev>`,
-      to: [convite.email],
-      subject: `Você foi convidado para ${unidade.apelido_app}`,
-      html: emailHtml,
-    });
+    // Tentar enviar email via Resend se configurado
+    if (resend) {
+      try {
+        const emailResponse = await resend.emails.send({
+          from: `${unidade.apelido_app} <onboarding@resend.dev>`,
+          to: [convite.email],
+          subject: `Você foi convidado para ${unidade.apelido_app}`,
+          html: emailHtml,
+        });
 
-    console.log("Email enviado:", emailResponse);
+        console.log("Email enviado:", emailResponse);
+        
+        if (emailResponse.data?.id) {
+          emailSent = true;
+        } else if (emailResponse.error) {
+          console.log("Erro Resend:", emailResponse.error);
+        }
+      } catch (emailError) {
+        console.log("Erro ao enviar email via Resend:", emailError);
+      }
+    }
+
+    // Se email não foi enviado via Resend, usar Supabase Auth para enviar
+    if (!emailSent) {
+      console.log("Usando Supabase Auth para enviar email de convite");
+      
+      // Verificar se o usuário já existe
+      const { data: existingUsers } = await supabase.auth.admin.listUsers();
+      const userExists = existingUsers?.users?.some(u => u.email === convite.email);
+
+      if (userExists) {
+        // Se usuário existe, enviar magic link
+        const { error: signInError } = await supabase.auth.signInWithOtp({
+          email: convite.email,
+          options: {
+            emailRedirectTo: `${siteUrl}/convite/${convite.codigo}`,
+          }
+        });
+        
+        if (!signInError) {
+          emailSent = true;
+          console.log("Magic link enviado via Supabase Auth");
+        } else {
+          console.log("Erro ao enviar magic link:", signInError);
+        }
+      } else {
+        // Se usuário não existe, criar convite (o usuário precisará criar conta)
+        const { error: inviteError } = await supabase.auth.admin.inviteUserByEmail(convite.email, {
+          redirectTo: `${siteUrl}/convite/${convite.codigo}`,
+        });
+
+        if (!inviteError) {
+          emailSent = true;
+          console.log("Convite enviado via Supabase Auth");
+        } else {
+          console.log("Erro ao enviar convite via Supabase:", inviteError);
+        }
+      }
+    }
 
     // Atualizar status do convite
-    await supabase
-      .from("convites")
-      .update({ 
-        email_enviado: true, 
-        email_enviado_em: new Date().toISOString() 
-      })
-      .eq("id", conviteId);
+    if (emailSent) {
+      await supabase
+        .from("convites")
+        .update({ 
+          email_enviado: true, 
+          email_enviado_em: new Date().toISOString() 
+        })
+        .eq("id", conviteId);
+    }
 
     return new Response(
-      JSON.stringify({ success: true, messageId: emailResponse.data?.id }),
+      JSON.stringify({ 
+        success: emailSent, 
+        method: resend ? "resend" : "supabase",
+        message: emailSent ? "Convite enviado com sucesso" : "Não foi possível enviar o email"
+      }),
       {
-        status: 200,
+        status: emailSent ? 200 : 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       }
     );
