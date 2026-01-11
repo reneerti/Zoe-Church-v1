@@ -36,6 +36,7 @@ import TermosAceite from "./pages/TermosAceite";
 import MeusPlanos from "./pages/MeusPlanos";
 import EntrarPlano from "./pages/EntrarPlano";
 import Notificacoes from "./pages/Notificacoes";
+import Instalar from "./pages/Instalar";
 
 const queryClient = new QueryClient();
 
@@ -52,6 +53,7 @@ const App = () => (
               <Route path="/auth" element={<Auth />} />
               <Route path="/termos" element={<TermosAceite />} />
               <Route path="/convite/:codigo" element={<AceitarConvite />} />
+              <Route path="/instalar" element={<Instalar />} />
               
               {/* Authenticated Routes - Any logged user */}
               <Route path="/" element={<AuthenticatedRoute><Index /></AuthenticatedRoute>} />
