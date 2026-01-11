@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronLeft, Database, RefreshCw, Check, AlertCircle } from "lucide-react";
+import { ChevronLeft, Database, RefreshCw, Check, AlertCircle, BookOpen, Music, Library, Zap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { PageContainer } from "@/components/layout/PageContainer";
@@ -8,6 +8,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
+
+interface ImportStatus {
+  livros: number;
+  versoes: number;
+  versiculos: number;
+  hinos: number;
+}
 
 export default function AdminImport() {
   const navigate = useNavigate();
@@ -16,19 +24,35 @@ export default function AdminImport() {
   const [importing, setImporting] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
   const [results, setResults] = useState<Record<string, { success: boolean; message: string }>>({});
+  const [status, setStatus] = useState<ImportStatus | null>(null);
+  const [loadingStatus, setLoadingStatus] = useState(false);
 
-  const importData = async (action: string, description: string) => {
+  const fetchStatus = async () => {
+    setLoadingStatus(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('populate-database', {
+        body: { action: 'status' }
+      });
+      if (error) throw error;
+      setStatus(data.status);
+    } catch (error) {
+      console.error('Erro ao buscar status:', error);
+    } finally {
+      setLoadingStatus(false);
+    }
+  };
+
+  const importData = async (action: string, description: string, options?: { batch?: number; version?: string }) => {
     setImporting(action);
     setProgress(0);
 
     try {
-      // Simulate progress
       const progressInterval = setInterval(() => {
-        setProgress(prev => Math.min(prev + 10, 90));
-      }, 500);
+        setProgress(prev => Math.min(prev + 5, 95));
+      }, 300);
 
-      const { data, error } = await supabase.functions.invoke('import-bible', {
-        body: { action }
+      const { data, error } = await supabase.functions.invoke('populate-database', {
+        body: { action, ...options }
       });
 
       clearInterval(progressInterval);
@@ -43,8 +67,17 @@ export default function AdminImport() {
 
       toast({
         title: "Sucesso!",
-        description: `${description} importado(s) com sucesso.`,
+        description: data.message || `${description} importado(s) com sucesso.`,
       });
+
+      // Se tem próximo batch, continua automaticamente
+      if (data.nextBatch) {
+        setTimeout(() => {
+          importData(action, description, { ...options, batch: data.nextBatch });
+        }, 500);
+      } else {
+        fetchStatus();
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Erro desconhecido';
       setResults(prev => ({
@@ -52,6 +85,66 @@ export default function AdminImport() {
         [action]: { success: false, message }
       }));
 
+      toast({
+        title: "Erro na importação",
+        description: message,
+        variant: "destructive",
+      });
+    } finally {
+      if (!results[action]?.message?.includes('nextBatch')) {
+        setImporting(null);
+        setProgress(0);
+      }
+    }
+  };
+
+  const importAllData = async () => {
+    setImporting('import-all');
+    setProgress(0);
+
+    try {
+      // 1. Importar base (versões, livros, hinos)
+      setProgress(10);
+      await supabase.functions.invoke('populate-database', {
+        body: { action: 'import-all' }
+      });
+
+      // 2. Importar versículos NVI
+      setProgress(20);
+      for (let batch = 1; batch <= 14; batch++) {
+        await supabase.functions.invoke('populate-database', {
+          body: { action: 'import-verses', batch, version: 'NVI' }
+        });
+        setProgress(20 + (batch * 5));
+      }
+
+      // 3. Importar versículos ARA
+      setProgress(50);
+      for (let batch = 1; batch <= 14; batch++) {
+        await supabase.functions.invoke('populate-database', {
+          body: { action: 'import-verses', batch, version: 'ARA' }
+        });
+        setProgress(50 + (batch * 3));
+      }
+
+      // 4. Importar versículos NTLH
+      setProgress(80);
+      for (let batch = 1; batch <= 14; batch++) {
+        await supabase.functions.invoke('populate-database', {
+          body: { action: 'import-verses', batch, version: 'NTLH' }
+        });
+        setProgress(80 + (batch * 1.5));
+      }
+
+      setProgress(100);
+      toast({
+        title: "Importação Completa!",
+        description: "Bíblia (3 versões) e Harpa Cristã (640 hinos) importados com sucesso!",
+      });
+
+      fetchStatus();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Erro desconhecido';
       toast({
         title: "Erro na importação",
         description: message,
@@ -86,29 +179,39 @@ export default function AdminImport() {
 
   const importActions = [
     {
-      action: 'import-sample-verses',
-      title: 'Versículos de Exemplo',
-      description: 'Importa Gênesis 1 (NVI) como amostra',
-      icon: Database,
+      action: 'import-all',
+      title: 'Importação Rápida',
+      description: 'Importa versões, livros e todos os 640 hinos da Harpa',
+      icon: Zap,
+      color: 'text-yellow-500',
     },
     {
-      action: 'import-sample-hymns',
-      title: 'Hinos de Exemplo',
-      description: 'Importa os primeiros 3 hinos da Harpa',
-      icon: Database,
+      action: 'import-versions',
+      title: 'Versões da Bíblia',
+      description: 'Importa NVI, ARA, NTLH, ACF, KJV',
+      icon: Library,
+      color: 'text-blue-500',
     },
     {
-      action: 'import-harpa-batch-1',
-      title: 'Harpa Cristã (1-50)',
-      description: 'Importa os hinos 1 a 50',
-      icon: Database,
+      action: 'import-books',
+      title: 'Livros da Bíblia',
+      description: 'Importa os 66 livros (AT e NT)',
+      icon: BookOpen,
+      color: 'text-green-500',
     },
     {
-      action: 'import-harpa-batch-2',
-      title: 'Harpa Cristã (51-100)',
-      description: 'Importa os hinos 51 a 100',
-      icon: Database,
+      action: 'import-harpa',
+      title: 'Harpa Cristã Completa',
+      description: 'Importa todos os 640 hinos em batches',
+      icon: Music,
+      color: 'text-purple-500',
     },
+  ];
+
+  const versesImport = [
+    { version: 'NVI', name: 'Nova Versão Internacional' },
+    { version: 'ARA', name: 'Almeida Revista e Atualizada' },
+    { version: 'NTLH', name: 'Nova Tradução na Linguagem de Hoje' },
   ];
 
   return (
@@ -118,17 +221,93 @@ export default function AdminImport() {
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
             <ChevronLeft className="h-5 w-5" />
           </Button>
-          <h1 className="font-bold text-lg ml-2">Importar Dados</h1>
+          <h1 className="font-bold text-lg ml-2">Popular Banco de Dados</h1>
         </div>
       </header>
 
       <PageContainer>
         <div className="py-4 space-y-4">
-          <p className="text-sm text-muted-foreground">
-            Use esta página para popular o banco de dados com os dados da Bíblia e Harpa Cristã.
-          </p>
+          {/* Status Card */}
+          <Card className="border-primary/20 bg-primary/5">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Database className="h-4 w-4" />
+                  Status do Banco
+                </CardTitle>
+                <Button variant="ghost" size="sm" onClick={fetchStatus} disabled={loadingStatus}>
+                  <RefreshCw className={`h-4 w-4 ${loadingStatus ? 'animate-spin' : ''}`} />
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {status ? (
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline">{status.versoes}</Badge>
+                    <span className="text-sm text-muted-foreground">Versões</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline">{status.livros}</Badge>
+                    <span className="text-sm text-muted-foreground">Livros</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline">{status.versiculos.toLocaleString()}</Badge>
+                    <span className="text-sm text-muted-foreground">Versículos</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline">{status.hinos}</Badge>
+                    <span className="text-sm text-muted-foreground">Hinos</span>
+                  </div>
+                </div>
+              ) : (
+                <Button variant="outline" size="sm" onClick={fetchStatus} className="w-full">
+                  Verificar Status
+                </Button>
+              )}
+            </CardContent>
+          </Card>
 
-          {importActions.map((item) => {
+          {/* Importação Completa */}
+          <Card className="border-yellow-500/30 bg-yellow-500/5">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Zap className="h-4 w-4 text-yellow-500" />
+                Importação Completa Automática
+              </CardTitle>
+              <CardDescription>
+                Importa tudo: 66 livros, 3 versões, ~31.000 versículos e 640 hinos
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {importing === 'import-all' && (
+                <div className="mb-3">
+                  <Progress value={progress} className="h-2" />
+                  <p className="text-xs text-muted-foreground mt-1">{Math.round(progress)}% concluído</p>
+                </div>
+              )}
+              <Button
+                onClick={importAllData}
+                disabled={importing !== null}
+                className="w-full bg-yellow-600 hover:bg-yellow-700"
+              >
+                {importing === 'import-all' ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    Importando...
+                  </>
+                ) : (
+                  <>
+                    <Zap className="h-4 w-4 mr-2" />
+                    Importar Tudo
+                  </>
+                )}
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Cards de importação individual */}
+          {importActions.slice(1).map((item) => {
             const result = results[item.action];
             const isImporting = importing === item.action;
 
@@ -136,7 +315,7 @@ export default function AdminImport() {
               <Card key={item.action}>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-base flex items-center gap-2">
-                    <item.icon className="h-4 w-4" />
+                    <item.icon className={`h-4 w-4 ${item.color}`} />
                     {item.title}
                   </CardTitle>
                   <CardDescription>{item.description}</CardDescription>
@@ -161,6 +340,7 @@ export default function AdminImport() {
                     onClick={() => importData(item.action, item.title)}
                     disabled={importing !== null}
                     className="w-full"
+                    variant="outline"
                   >
                     {isImporting ? (
                       <>
@@ -176,22 +356,26 @@ export default function AdminImport() {
             );
           })}
 
-          <Card className="border-dashed">
+          {/* Importação de versículos por versão */}
+          <Card>
             <CardHeader>
-              <CardTitle className="text-base">Importação Completa via SQL</CardTitle>
+              <CardTitle className="text-base">Versículos por Versão</CardTitle>
               <CardDescription>
-                Para importar a Bíblia completa (NVI, NTLH, ARA) e todos os 640 hinos, 
-                use o SQL Editor do Supabase Dashboard com scripts SQL.
+                Importa versículos em batches de 5 livros por vez
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => window.open('https://supabase.com/dashboard/project/allfhenlhsjkuatczato/sql/new', '_blank')}
-              >
-                Abrir SQL Editor
-              </Button>
+            <CardContent className="space-y-2">
+              {versesImport.map((v) => (
+                <Button
+                  key={v.version}
+                  onClick={() => importData('import-verses', `Versículos ${v.version}`, { version: v.version, batch: 1 })}
+                  disabled={importing !== null}
+                  className="w-full"
+                  variant="outline"
+                >
+                  Importar {v.version}
+                </Button>
+              ))}
             </CardContent>
           </Card>
         </div>
