@@ -7,43 +7,48 @@ import { PageContainer } from "@/components/layout/PageContainer";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
-// Sample hymns data
-const hymns = [
-  { number: 1, title: "Chuvas de Graça", category: "Adoração" },
-  { number: 2, title: "Saudai o Nome de Jesus", category: "Louvor" },
-  { number: 13, title: "Bendito Seja o Cordeiro", category: "Adoração" },
-  { number: 15, title: "Eis o Pendão", category: "Louvor" },
-  { number: 21, title: "Tudo Entregarei", category: "Consagração" },
-  { number: 25, title: "Cristo Já Ressuscitou", category: "Páscoa" },
-  { number: 56, title: "Mais Perto Quero Estar", category: "Comunhão" },
-  { number: 77, title: "Castelo Forte", category: "Louvor" },
-  { number: 100, title: "Santo! Santo! Santo!", category: "Adoração" },
-  { number: 155, title: "Grandioso És Tu", category: "Adoração" },
-  { number: 212, title: "Rude Cruz", category: "Páscoa" },
-  { number: 291, title: "Ao Deus de Abraão Louvai", category: "Louvor" },
-  { number: 300, title: "Fala, Jesus Querido", category: "Comunhão" },
-  { number: 400, title: "Quão Bondoso Amigo", category: "Comunhão" },
-  { number: 525, title: "Deixa a Luz do Céu Entrar", category: "Louvor" },
-];
-
-const favoriteHymns = [1, 56, 155, 212, 400];
+import { useHarpaHymns, useFavoriteHymns, useToggleFavoriteHymn, HarpaHymn } from "@/hooks/useHarpaData";
+import { useAuth } from "@/contexts/AuthContext";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Harpa() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState("todos");
+
+  const { data: hymns = [], isLoading } = useHarpaHymns();
+  const { data: favoriteHymns = [] } = useFavoriteHymns(user?.id);
+  const toggleFavorite = useToggleFavoriteHymn(user?.id);
+
+  const favoriteHymnIds = favoriteHymns.map(f => f.hymn_id);
 
   const filteredHymns = hymns.filter((hymn) => {
     const matchesSearch = 
       hymn.title.toLowerCase().includes(search.toLowerCase()) ||
-      hymn.number.toString().includes(search);
+      hymn.hymn_number.toString().includes(search);
     
     if (activeTab === "favoritos") {
-      return matchesSearch && favoriteHymns.includes(hymn.number);
+      return matchesSearch && favoriteHymnIds.includes(hymn.id);
     }
     return matchesSearch;
   });
+
+  const handleToggleFavorite = (hymn: HarpaHymn, isFavorite: boolean) => {
+    if (!user) {
+      toast({
+        title: "Login necessário",
+        description: "Faça login para salvar seus hinos favoritos",
+        variant: "destructive",
+      });
+      navigate("/auth");
+      return;
+    }
+
+    toggleFavorite.mutate({ hymnId: hymn.id, isFavorite });
+  };
 
   return (
     <>
@@ -96,25 +101,47 @@ export default function Harpa() {
           </TabsList>
 
           <TabsContent value="todos" className="mt-0">
-            <div className="space-y-2">
-              {filteredHymns.map((hymn, index) => (
-                <HymnCard 
-                  key={hymn.number} 
-                  hymn={hymn} 
-                  isFavorite={favoriteHymns.includes(hymn.number)}
-                  delay={index * 30}
-                />
-              ))}
-            </div>
+            {isLoading ? (
+              <div className="space-y-2">
+                {Array.from({ length: 10 }).map((_, i) => (
+                  <div key={i} className="flex items-center gap-4 p-4 rounded-xl bg-card border">
+                    <Skeleton className="w-12 h-12 rounded-xl" />
+                    <div className="flex-1">
+                      <Skeleton className="h-5 w-3/4 mb-2" />
+                      <Skeleton className="h-3 w-1/4" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : hymns.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <Music2 className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                <p>Nenhum hino disponível</p>
+                <p className="text-sm">Os hinos serão carregados em breve</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {filteredHymns.map((hymn, index) => (
+                  <HymnCard 
+                    key={hymn.id} 
+                    hymn={hymn} 
+                    isFavorite={favoriteHymnIds.includes(hymn.id)}
+                    onToggleFavorite={handleToggleFavorite}
+                    delay={index * 30}
+                  />
+                ))}
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="favoritos" className="mt-0">
             <div className="space-y-2">
               {filteredHymns.map((hymn, index) => (
                 <HymnCard 
-                  key={hymn.number} 
+                  key={hymn.id} 
                   hymn={hymn} 
                   isFavorite={true}
+                  onToggleFavorite={handleToggleFavorite}
                   delay={index * 30}
                 />
               ))}
@@ -132,7 +159,7 @@ export default function Harpa() {
         {/* Total Count */}
         <div className="py-4 text-center">
           <p className="text-sm text-muted-foreground">
-            Mostrando {filteredHymns.length} de 640 hinos
+            Mostrando {filteredHymns.length} de {hymns.length > 0 ? hymns.length : 640} hinos
           </p>
         </div>
       </PageContainer>
@@ -145,14 +172,15 @@ export default function Harpa() {
 function HymnCard({ 
   hymn, 
   isFavorite,
+  onToggleFavorite,
   delay 
 }: { 
-  hymn: { number: number; title: string; category: string }; 
+  hymn: HarpaHymn; 
   isFavorite: boolean;
+  onToggleFavorite: (hymn: HarpaHymn, isFavorite: boolean) => void;
   delay: number;
 }) {
   const navigate = useNavigate();
-  const [favorite, setFavorite] = useState(isFavorite);
 
   return (
     <div
@@ -165,27 +193,29 @@ function HymnCard({
       style={{ animationDelay: `${delay}ms` }}
     >
       <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-harpa/10 flex items-center justify-center">
-        <span className="font-bold text-harpa">{hymn.number}</span>
+        <span className="font-bold text-harpa">{hymn.hymn_number}</span>
       </div>
       
       <button 
         className="flex-1 text-left"
-        onClick={() => navigate(`/harpa/${hymn.number}`)}
+        onClick={() => navigate(`/harpa/${hymn.hymn_number}`)}
       >
         <h3 className="font-medium">{hymn.title}</h3>
-        <p className="text-xs text-muted-foreground">{hymn.category}</p>
+        <p className="text-xs text-muted-foreground line-clamp-1">
+          {hymn.author || "Harpa Cristã"}
+        </p>
       </button>
 
       <Button
         variant="ghost"
         size="icon"
         className="h-9 w-9 flex-shrink-0"
-        onClick={() => setFavorite(!favorite)}
+        onClick={() => onToggleFavorite(hymn, isFavorite)}
       >
         <Heart 
           className={cn(
             "h-5 w-5 transition-colors",
-            favorite ? "fill-ofertas text-ofertas" : "text-muted-foreground"
+            isFavorite ? "fill-ofertas text-ofertas" : "text-muted-foreground"
           )} 
         />
       </Button>
