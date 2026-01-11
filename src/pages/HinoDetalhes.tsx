@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronLeft, Heart, Share2, ChevronUp, ChevronDown, Maximize2, Minimize2 } from "lucide-react";
+import { ChevronLeft, Heart, Share2, ChevronUp, ChevronDown, Maximize2, Minimize2, Presentation } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { PageContainer } from "@/components/layout/PageContainer";
@@ -9,6 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 export default function HinoDetalhes() {
   const { numero } = useParams<{ numero: string }>();
@@ -165,6 +166,19 @@ export default function HinoDetalhes() {
           </h1>
 
           <div className="flex items-center gap-1">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9"
+                  onClick={() => navigate(`/harpa/${hymnNumber}/apresentar`)}
+                >
+                  <Presentation className="h-5 w-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Modo apresentação</TooltipContent>
+            </Tooltip>
             <Button
               variant="ghost"
               size="icon"
