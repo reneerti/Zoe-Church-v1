@@ -34,12 +34,12 @@ export function ModuleCard({
       style={{ animationDelay: `${delay}ms` }}
     >
       <div className="flex items-start gap-4">
-        <div className="p-3 rounded-xl bg-white/20 backdrop-blur-sm">
-          <Icon className="h-6 w-6" />
+        <div className="p-3 rounded-xl bg-white/25 backdrop-blur-sm shadow-inner">
+          <Icon className="h-6 w-6 drop-shadow-sm" />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-lg leading-tight">{title}</h3>
-          <p className="text-sm opacity-90 mt-0.5 line-clamp-2">{description}</p>
+          <h3 className="font-semibold text-lg leading-tight drop-shadow-sm">{title}</h3>
+          <p className="text-sm opacity-90 mt-1 line-clamp-2">{description}</p>
         </div>
       </div>
     </button>
