@@ -42,32 +42,41 @@
 
     --radius: 1rem;
 
-    /* Custom Colors for Modules - Modern & Light */
-    --bible: 217 91% 60%;
+    /* Custom Colors for Modules - Modern & Light Pastel Tones */
+    --bible: 221 83% 53%;
+    --bible-light: 221 89% 95%;
     --bible-foreground: 0 0% 100%;
     
-    --harpa: 271 81% 56%;
+    --harpa: 280 65% 60%;
+    --harpa-light: 280 70% 95%;
     --harpa-foreground: 0 0% 100%;
     
-    --agenda: 173 80% 40%;
+    --agenda: 160 84% 39%;
+    --agenda-light: 160 76% 95%;
     --agenda-foreground: 0 0% 100%;
     
-    --devocional: 25 95% 53%;
+    --devocional: 24 95% 53%;
+    --devocional-light: 24 100% 95%;
     --devocional-foreground: 0 0% 100%;
     
-    --ofertas: 339 90% 51%;
+    --ofertas: 340 82% 52%;
+    --ofertas-light: 340 90% 95%;
     --ofertas-foreground: 0 0% 100%;
     
-    --videos: 0 84% 60%;
+    --videos: 346 77% 49%;
+    --videos-light: 346 90% 95%;
     --videos-foreground: 0 0% 100%;
     
     --lideranca: 199 89% 48%;
+    --lideranca-light: 199 95% 95%;
     --lideranca-foreground: 0 0% 100%;
     
-    --convertidos: 142 76% 36%;
+    --convertidos: 152 69% 40%;
+    --convertidos-light: 152 76% 95%;
     --convertidos-foreground: 0 0% 100%;
     
-    --planos: 262 83% 58%;
+    --planos: 258 90% 66%;
+    --planos-light: 258 95% 95%;
     --planos-foreground: 0 0% 100%;
 
     /* Highlight Colors for Bible */
@@ -193,56 +202,65 @@
 }
 
 @layer components {
-  /* Module Cards */
+  /* Module Cards - Modern Gradient Style */
   .module-card {
     @apply relative overflow-hidden rounded-2xl p-5 transition-all duration-300;
-    @apply hover:scale-[1.02] hover:shadow-lg active:scale-[0.98];
-    @apply backdrop-blur-sm;
+    @apply hover:scale-[1.02] hover:shadow-xl active:scale-[0.98];
+    @apply shadow-md;
   }
 
   .module-card-bible {
-    @apply bg-gradient-to-br from-[hsl(var(--bible))] to-[hsl(var(--bible)/0.8)];
-    @apply text-[hsl(var(--bible-foreground))];
+    background: linear-gradient(135deg, hsl(221 83% 53%) 0%, hsl(235 82% 65%) 100%);
+    @apply text-white;
+    box-shadow: 0 4px 20px -4px hsl(221 83% 53% / 0.4);
   }
 
   .module-card-harpa {
-    @apply bg-gradient-to-br from-[hsl(var(--harpa))] to-[hsl(var(--harpa)/0.8)];
-    @apply text-[hsl(var(--harpa-foreground))];
+    background: linear-gradient(135deg, hsl(280 65% 60%) 0%, hsl(295 70% 65%) 100%);
+    @apply text-white;
+    box-shadow: 0 4px 20px -4px hsl(280 65% 60% / 0.4);
   }
 
   .module-card-agenda {
-    @apply bg-gradient-to-br from-[hsl(var(--agenda))] to-[hsl(var(--agenda)/0.8)];
-    @apply text-[hsl(var(--agenda-foreground))];
+    background: linear-gradient(135deg, hsl(160 84% 39%) 0%, hsl(175 70% 45%) 100%);
+    @apply text-white;
+    box-shadow: 0 4px 20px -4px hsl(160 84% 39% / 0.4);
   }
 
   .module-card-devocional {
-    @apply bg-gradient-to-br from-[hsl(var(--devocional))] to-[hsl(var(--devocional)/0.8)];
-    @apply text-[hsl(var(--devocional-foreground))];
+    background: linear-gradient(135deg, hsl(24 95% 53%) 0%, hsl(38 95% 55%) 100%);
+    @apply text-white;
+    box-shadow: 0 4px 20px -4px hsl(24 95% 53% / 0.4);
   }
 
   .module-card-ofertas {
-    @apply bg-gradient-to-br from-[hsl(var(--ofertas))] to-[hsl(var(--ofertas)/0.8)];
-    @apply text-[hsl(var(--ofertas-foreground))];
+    background: linear-gradient(135deg, hsl(340 82% 52%) 0%, hsl(355 85% 58%) 100%);
+    @apply text-white;
+    box-shadow: 0 4px 20px -4px hsl(340 82% 52% / 0.4);
   }
 
   .module-card-videos {
-    @apply bg-gradient-to-br from-[hsl(var(--videos))] to-[hsl(var(--videos)/0.8)];
-    @apply text-[hsl(var(--videos-foreground))];
+    background: linear-gradient(135deg, hsl(346 77% 49%) 0%, hsl(360 80% 55%) 100%);
+    @apply text-white;
+    box-shadow: 0 4px 20px -4px hsl(346 77% 49% / 0.4);
   }
 
   .module-card-lideranca {
-    @apply bg-gradient-to-br from-[hsl(var(--lideranca))] to-[hsl(var(--lideranca)/0.8)];
-    @apply text-[hsl(var(--lideranca-foreground))];
+    background: linear-gradient(135deg, hsl(199 89% 48%) 0%, hsl(210 85% 55%) 100%);
+    @apply text-white;
+    box-shadow: 0 4px 20px -4px hsl(199 89% 48% / 0.4);
   }
 
   .module-card-convertidos {
-    @apply bg-gradient-to-br from-[hsl(var(--convertidos))] to-[hsl(var(--convertidos)/0.8)];
-    @apply text-[hsl(var(--convertidos-foreground))];
+    background: linear-gradient(135deg, hsl(152 69% 40%) 0%, hsl(165 65% 45%) 100%);
+    @apply text-white;
+    box-shadow: 0 4px 20px -4px hsl(152 69% 40% / 0.4);
   }
 
   .module-card-planos {
-    @apply bg-gradient-to-br from-[hsl(var(--planos))] to-[hsl(var(--planos)/0.8)];
-    @apply text-[hsl(var(--planos-foreground))];
+    background: linear-gradient(135deg, hsl(258 90% 66%) 0%, hsl(275 85% 65%) 100%);
+    @apply text-white;
+    box-shadow: 0 4px 20px -4px hsl(258 90% 66% / 0.4);
   }
 
   /* Glass Effect */
