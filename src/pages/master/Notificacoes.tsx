@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { sendPushToUsers } from '@/hooks/useSendPushToUsers';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -169,6 +170,8 @@ export default function MasterNotificacoes() {
       
       if (usuariosError) throw usuariosError;
 
+      const userIds = usuarios?.map(u => u.user_id).filter(Boolean) as string[];
+
       // Criar registros de notificação para cada usuário
       const registros = usuarios?.map(u => ({
         notificacao_id: notificacao.id,
@@ -195,7 +198,23 @@ export default function MasterNotificacoes() {
       
       if (updateError) throw updateError;
 
-      toast.success(`Notificação enviada para ${registros.length} membros!`);
+      // Enviar push notifications
+      const pushResult = await sendPushToUsers({
+        userIds,
+        title: notificacao.titulo,
+        body: notificacao.mensagem,
+        data: {
+          type: 'notification',
+          notificationId: notificacao.id,
+          url: '/notificacoes',
+        },
+      });
+
+      const pushInfo = pushResult.sent > 0 
+        ? ` (${pushResult.sent} push enviados)` 
+        : '';
+
+      toast.success(`Notificação enviada para ${registros.length} membros!${pushInfo}`);
       fetchData();
       
     } catch (error) {
