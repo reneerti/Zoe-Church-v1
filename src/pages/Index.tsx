@@ -22,6 +22,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { PushNotificationBanner } from "@/components/notifications/PushNotificationManager";
 
 const modules = [
   {
@@ -196,6 +197,7 @@ export default function Index() {
         </div>
       </PageContainer>
 
+      <PushNotificationBanner />
       <BottomNav />
     </>
   );

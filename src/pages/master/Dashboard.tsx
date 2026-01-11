@@ -19,6 +19,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { format, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { PlanosDashboard } from "@/components/master/PlanosDashboard";
 
 type Membro = {
   id: string;
@@ -499,12 +500,17 @@ export default function MasterDashboard() {
         </div>
 
         {/* Tabs */}
-        <Tabs defaultValue="membros" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+        <Tabs defaultValue="planos" className="w-full">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="planos">Planos</TabsTrigger>
             <TabsTrigger value="membros">Membros</TabsTrigger>
             <TabsTrigger value="moderacao">Moderação</TabsTrigger>
             <TabsTrigger value="ia">Uso de IA</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="planos">
+            <PlanosDashboard unidadeId={unidade?.id} />
+          </TabsContent>
 
           <TabsContent value="membros">
             <Card>

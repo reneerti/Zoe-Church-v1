@@ -2,6 +2,8 @@ import { Bell, Search, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import logoZoe from '@/assets/logo-zoe.png';
+import { useNavigate } from "react-router-dom";
+import { useNotificationListener } from "@/components/notifications/PushNotificationManager";
 
 interface HeaderProps {
   title?: string;
@@ -22,6 +24,9 @@ export function Header({
   transparent = false,
   showLogo = false
 }: HeaderProps) {
+  const navigate = useNavigate();
+  const { unreadCount } = useNotificationListener();
+  
   return (
     <header className={cn(
       "sticky top-0 z-40 w-full safe-area-inset-top",
@@ -49,9 +54,18 @@ export function Header({
             </Button>
           )}
           {showNotifications && (
-            <Button variant="ghost" size="icon" className="h-9 w-9 relative">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-9 w-9 relative"
+              onClick={() => navigate('/notificacoes')}
+            >
               <Bell className="h-5 w-5" />
-              <span className="absolute top-1.5 right-1.5 h-2 w-2 bg-accent rounded-full" />
+              {unreadCount > 0 && (
+                <span className="absolute top-1 right-1 min-w-[16px] h-4 bg-destructive text-destructive-foreground text-xs font-bold rounded-full flex items-center justify-center px-1">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
             </Button>
           )}
         </div>
