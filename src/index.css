@@ -2,95 +2,155 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* ZOE CHURCH App Design System */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Merriweather:ital,wght@0,300;0,400;0,700;1,400&display=swap');
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Core Brand Colors */
+    --background: 220 25% 98%;
+    --foreground: 222 47% 11%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 222 47% 11%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 222 47% 11%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Primary: Indigo - Espiritual e moderno */
+    --primary: 239 84% 67%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Secondary: Soft Purple */
+    --secondary: 263 70% 50%;
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* Muted */
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* Accent: Amber - Esperança e luz */
+    --accent: 38 92% 50%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 239 84% 67%;
 
-    --radius: 0.5rem;
+    --radius: 1rem;
 
+    /* Custom Colors for Modules */
+    --bible: 239 84% 67%;
+    --bible-foreground: 0 0% 100%;
+    
+    --harpa: 280 65% 60%;
+    --harpa-foreground: 0 0% 100%;
+    
+    --agenda: 160 84% 39%;
+    --agenda-foreground: 0 0% 100%;
+    
+    --devocional: 38 92% 50%;
+    --devocional-foreground: 0 0% 100%;
+    
+    --ofertas: 340 75% 55%;
+    --ofertas-foreground: 0 0% 100%;
+    
+    --videos: 4 90% 58%;
+    --videos-foreground: 0 0% 100%;
+    
+    --lideranca: 199 89% 48%;
+    --lideranca-foreground: 0 0% 100%;
+    
+    --convertidos: 142 71% 45%;
+    --convertidos-foreground: 0 0% 100%;
+
+    /* Highlight Colors for Bible */
+    --highlight-yellow: 48 96% 89%;
+    --highlight-green: 142 69% 85%;
+    --highlight-blue: 199 89% 85%;
+    --highlight-pink: 330 81% 90%;
+    --highlight-orange: 27 96% 85%;
+    --highlight-purple: 270 67% 89%;
+
+    /* Gradients */
+    --gradient-hero: linear-gradient(135deg, hsl(239 84% 67%) 0%, hsl(263 70% 55%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(38 92% 50%) 0%, hsl(27 96% 55%) 100%);
+    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(220 25% 98%) 100%);
+
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    --shadow-glow: 0 0 30px -5px hsl(239 84% 67% / 0.3);
+
+    /* Sidebar */
     --sidebar-background: 0 0% 98%;
-
     --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
+    --sidebar-primary: 239 84% 67%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 14% 96%;
+    --sidebar-accent-foreground: 222 47% 11%;
     --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-ring: 239 84% 67%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    --background: 222 47% 6%;
+    --foreground: 220 25% 98%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 222 47% 9%;
+    --card-foreground: 220 25% 98%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 222 47% 9%;
+    --popover-foreground: 220 25% 98%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 239 84% 67%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 263 70% 50%;
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 222 47% 15%;
+    --muted-foreground: 220 14% 70%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 38 92% 50%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
+    --border: 222 47% 15%;
+    --input: 222 47% 15%;
+    --ring: 239 84% 67%;
+
+    --gradient-hero: linear-gradient(135deg, hsl(239 84% 55%) 0%, hsl(263 70% 45%) 100%);
+    --gradient-card: linear-gradient(180deg, hsl(222 47% 10%) 0%, hsl(222 47% 8%) 100%);
+
+    --shadow-glow: 0 0 30px -5px hsl(239 84% 67% / 0.2);
+
+    --sidebar-background: 222 47% 8%;
+    --sidebar-foreground: 220 25% 98%;
+    --sidebar-primary: 239 84% 67%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-accent: 222 47% 12%;
+    --sidebar-accent-foreground: 220 25% 98%;
+    --sidebar-border: 222 47% 15%;
+    --sidebar-ring: 239 84% 67%;
+  }
+
+  /* Reading Mode - Sepia */
+  .reading-mode {
+    --background: 40 28% 95%;
+    --foreground: 24 10% 20%;
+    --card: 40 28% 93%;
+    --card-foreground: 24 10% 20%;
+    --muted: 40 20% 88%;
+    --muted-foreground: 24 10% 40%;
+    --border: 40 20% 85%;
   }
 }
 
@@ -99,7 +159,173 @@ All colors MUST be HSL.
     @apply border-border;
   }
 
+  html {
+    scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
+  }
+
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  /* Bible/Reading Text */
+  .font-serif {
+    font-family: 'Merriweather', Georgia, serif;
+  }
+
+  /* Scrollbar Styling */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-muted/50 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-muted-foreground/20 rounded-full hover:bg-muted-foreground/30 transition-colors;
+  }
+}
+
+@layer components {
+  /* Module Cards */
+  .module-card {
+    @apply relative overflow-hidden rounded-2xl p-5 transition-all duration-300;
+    @apply hover:scale-[1.02] hover:shadow-lg active:scale-[0.98];
+    @apply backdrop-blur-sm;
+  }
+
+  .module-card-bible {
+    @apply bg-gradient-to-br from-[hsl(var(--bible))] to-[hsl(var(--bible)/0.8)];
+    @apply text-[hsl(var(--bible-foreground))];
+  }
+
+  .module-card-harpa {
+    @apply bg-gradient-to-br from-[hsl(var(--harpa))] to-[hsl(var(--harpa)/0.8)];
+    @apply text-[hsl(var(--harpa-foreground))];
+  }
+
+  .module-card-agenda {
+    @apply bg-gradient-to-br from-[hsl(var(--agenda))] to-[hsl(var(--agenda)/0.8)];
+    @apply text-[hsl(var(--agenda-foreground))];
+  }
+
+  .module-card-devocional {
+    @apply bg-gradient-to-br from-[hsl(var(--devocional))] to-[hsl(var(--devocional)/0.8)];
+    @apply text-[hsl(var(--devocional-foreground))];
+  }
+
+  .module-card-ofertas {
+    @apply bg-gradient-to-br from-[hsl(var(--ofertas))] to-[hsl(var(--ofertas)/0.8)];
+    @apply text-[hsl(var(--ofertas-foreground))];
+  }
+
+  .module-card-videos {
+    @apply bg-gradient-to-br from-[hsl(var(--videos))] to-[hsl(var(--videos)/0.8)];
+    @apply text-[hsl(var(--videos-foreground))];
+  }
+
+  .module-card-lideranca {
+    @apply bg-gradient-to-br from-[hsl(var(--lideranca))] to-[hsl(var(--lideranca)/0.8)];
+    @apply text-[hsl(var(--lideranca-foreground))];
+  }
+
+  .module-card-convertidos {
+    @apply bg-gradient-to-br from-[hsl(var(--convertidos))] to-[hsl(var(--convertidos)/0.8)];
+    @apply text-[hsl(var(--convertidos-foreground))];
+  }
+
+  /* Glass Effect */
+  .glass {
+    @apply bg-card/80 backdrop-blur-md border border-border/50;
+  }
+
+  /* Hero Section */
+  .hero-gradient {
+    background: var(--gradient-hero);
+  }
+
+  /* Accent Button */
+  .btn-accent {
+    background: var(--gradient-accent);
+    @apply text-accent-foreground font-semibold shadow-md hover:shadow-lg transition-all;
+  }
+
+  /* Bottom Navigation */
+  .bottom-nav {
+    @apply fixed bottom-0 left-0 right-0 z-50;
+    @apply glass border-t border-border/50;
+    @apply safe-area-inset-bottom;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .bottom-nav-item {
+    @apply flex flex-col items-center justify-center py-2 px-3;
+    @apply text-muted-foreground transition-colors duration-200;
+    @apply hover:text-primary active:scale-95;
+  }
+
+  .bottom-nav-item.active {
+    @apply text-primary;
+  }
+
+  /* Verse Highlight Colors */
+  .highlight-yellow { background-color: hsl(var(--highlight-yellow)); }
+  .highlight-green { background-color: hsl(var(--highlight-green)); }
+  .highlight-blue { background-color: hsl(var(--highlight-blue)); }
+  .highlight-pink { background-color: hsl(var(--highlight-pink)); }
+  .highlight-orange { background-color: hsl(var(--highlight-orange)); }
+  .highlight-purple { background-color: hsl(var(--highlight-purple)); }
+
+  /* Animate In */
+  .animate-in {
+    animation: fadeIn 0.3s ease-out forwards;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Stagger Animation */
+  .stagger-1 { animation-delay: 0.05s; }
+  .stagger-2 { animation-delay: 0.1s; }
+  .stagger-3 { animation-delay: 0.15s; }
+  .stagger-4 { animation-delay: 0.2s; }
+  .stagger-5 { animation-delay: 0.25s; }
+  .stagger-6 { animation-delay: 0.3s; }
+  .stagger-7 { animation-delay: 0.35s; }
+  .stagger-8 { animation-delay: 0.4s; }
+
+  /* Safe Area for iOS */
+  .safe-area-inset-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+
+  .safe-area-inset-top {
+    padding-top: env(safe-area-inset-top, 0);
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 }
