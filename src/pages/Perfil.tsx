@@ -268,13 +268,9 @@ export default function Perfil() {
                 <SettingItem 
                   icon={Bell}
                   label="Notificações"
+                  onClick={() => navigate("/notificacoes")}
                   delay={350}
-                >
-                  <Switch 
-                    checked={notifications} 
-                    onCheckedChange={setNotifications}
-                  />
-                </SettingItem>
+                />
 
                 {/* Reading Settings */}
                 <SettingItem 

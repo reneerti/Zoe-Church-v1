@@ -35,6 +35,7 @@ import MasterNotificacoes from "./pages/master/Notificacoes";
 import TermosAceite from "./pages/TermosAceite";
 import MeusPlanos from "./pages/MeusPlanos";
 import EntrarPlano from "./pages/EntrarPlano";
+import Notificacoes from "./pages/Notificacoes";
 
 const queryClient = new QueryClient();
 
@@ -72,6 +73,7 @@ const App = () => (
               <Route path="/planos" element={<AuthenticatedRoute><MeusPlanos /></AuthenticatedRoute>} />
               <Route path="/planos/entrar" element={<AuthenticatedRoute><EntrarPlano /></AuthenticatedRoute>} />
               <Route path="/planos/entrar/:codigo" element={<AuthenticatedRoute><EntrarPlano /></AuthenticatedRoute>} />
+              <Route path="/notificacoes" element={<AuthenticatedRoute><Notificacoes /></AuthenticatedRoute>} />
               
               {/* Super User Routes */}
               <Route path="/admin" element={<SuperUserRoute><AdminDashboard /></SuperUserRoute>} />
