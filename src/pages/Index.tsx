@@ -37,7 +37,7 @@ const modules = [
     description: "Siga planos organizados para ler a Bíblia",
     icon: BookMarked,
     path: "/planos",
-    variant: "bible" as const,
+    variant: "planos" as const,
   },
   {
     title: "Harpa Cristã",
