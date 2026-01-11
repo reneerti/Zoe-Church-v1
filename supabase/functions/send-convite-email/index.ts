@@ -166,7 +166,7 @@ const handler = async (req: Request): Promise<Response> => {
     if (resend) {
       try {
         const emailResponse = await resend.emails.send({
-          from: `${unidade.apelido_app} <onboarding@resend.dev>`,
+          from: `${unidade.apelido_app} <noreply@zoemed.com.br>`,
           to: [convite.email],
           subject: `Você foi convidado para ${unidade.apelido_app}`,
           html: emailHtml,
