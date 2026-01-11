@@ -1,36 +1,26 @@
 import { useState, useRef, useEffect } from "react";
-import { ChevronLeft, Send, Sparkles, Bot, User } from "lucide-react";
+import { ChevronLeft, Send, Sparkles, Bot, User, RefreshCw, AlertCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { PageContainer } from "@/components/layout/PageContainer";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { cn } from "@/lib/utils";
-
-type Message = {
-  id: number;
-  role: "user" | "assistant";
-  content: string;
-};
+import { useBiblicalChat } from "@/hooks/useBiblicalChat";
+import { toast } from "sonner";
 
 const suggestedQuestions = [
   "O que significa João 3:16?",
   "Como posso crescer na fé?",
   "O que a Bíblia diz sobre ansiedade?",
   "Explique o Salmo 23",
+  "Quem foi o apóstolo Paulo?",
+  "O que é o fruto do Espírito?",
 ];
 
 export default function Chat() {
   const navigate = useNavigate();
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: 1,
-      role: "assistant",
-      content: "Olá! 👋 Sou o assistente bíblico da ZOE Church. Como posso ajudá-lo hoje? Você pode me perguntar sobre versículos, contexto histórico, ou pedir orientação espiritual baseada na Palavra de Deus.",
-    },
-  ]);
+  const { messages, isLoading, error, sendMessage, clearMessages } = useBiblicalChat();
   const [input, setInput] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -41,33 +31,20 @@ export default function Chat() {
     scrollToBottom();
   }, [messages]);
 
-  const handleSend = async () => {
+  useEffect(() => {
+    if (error) {
+      toast.error(error);
+    }
+  }, [error]);
+
+  const handleSend = () => {
     if (!input.trim() || isLoading) return;
-
-    const userMessage: Message = {
-      id: Date.now(),
-      role: "user",
-      content: input,
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
+    sendMessage(input);
     setInput("");
-    setIsLoading(true);
-
-    // Simulate AI response - will be replaced with actual AI integration
-    setTimeout(() => {
-      const aiResponse: Message = {
-        id: Date.now() + 1,
-        role: "assistant",
-        content: "Este é um exemplo de resposta do assistente IA. Em breve, a integração com IA será configurada para fornecer respostas baseadas na Bíblia e contexto espiritual. Por enquanto, explore o app e suas funcionalidades! 🙏",
-      };
-      setMessages((prev) => [...prev, aiResponse]);
-      setIsLoading(false);
-    }, 1500);
   };
 
   const handleSuggestion = (question: string) => {
-    setInput(question);
+    sendMessage(question);
   };
 
   return (
@@ -89,20 +66,29 @@ export default function Chat() {
                 <Sparkles className="h-4 w-4 text-primary-foreground" />
               </div>
               <div>
-                <h1 className="font-bold text-sm leading-none">Assistente Bíblico</h1>
-                <p className="text-xs text-muted-foreground">Powered by IA</p>
+                <h1 className="font-bold text-sm leading-none">Zoe AI</h1>
+                <p className="text-xs text-muted-foreground">Assistente Bíblico</p>
               </div>
             </div>
           </div>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-9 w-9"
+            onClick={clearMessages}
+            title="Nova conversa"
+          >
+            <RefreshCw className="h-4 w-4" />
+          </Button>
         </div>
       </header>
 
       <div className="flex flex-col h-[calc(100vh-56px-80px)] max-w-lg mx-auto">
         {/* Messages */}
         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-          {messages.map((message) => (
+          {messages.map((message, index) => (
             <div
-              key={message.id}
+              key={index}
               className={cn(
                 "flex gap-3 animate-fade-in",
                 message.role === "user" && "flex-row-reverse"
@@ -127,12 +113,12 @@ export default function Chat() {
                   ? "bg-muted rounded-tl-sm" 
                   : "bg-primary text-primary-foreground rounded-tr-sm"
               )}>
-                <p className="text-sm leading-relaxed">{message.content}</p>
+                <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
               </div>
             </div>
           ))}
 
-          {isLoading && (
+          {isLoading && messages[messages.length - 1]?.role === "user" && (
             <div className="flex gap-3 animate-fade-in">
               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
                 <Bot className="h-4 w-4 text-primary-foreground" />
@@ -144,6 +130,13 @@ export default function Chat() {
                   <div className="w-2 h-2 rounded-full bg-muted-foreground/50 animate-pulse" style={{ animationDelay: "300ms" }} />
                 </div>
               </div>
+            </div>
+          )}
+
+          {error && (
+            <div className="flex items-center gap-2 p-3 bg-destructive/10 text-destructive rounded-lg">
+              <AlertCircle className="h-4 w-4" />
+              <p className="text-sm">{error}</p>
             </div>
           )}
 
@@ -159,7 +152,8 @@ export default function Chat() {
                 <button
                   key={question}
                   onClick={() => handleSuggestion(question)}
-                  className="px-3 py-1.5 rounded-full bg-muted text-xs text-muted-foreground hover:bg-muted/80 transition-colors"
+                  disabled={isLoading}
+                  className="px-3 py-1.5 rounded-full bg-muted text-xs text-muted-foreground hover:bg-muted/80 transition-colors disabled:opacity-50"
                 >
                   {question}
                 </button>
@@ -172,7 +166,7 @@ export default function Chat() {
         <div className="p-4 glass border-t border-border">
           <div className="flex gap-2 max-w-lg mx-auto">
             <Input
-              placeholder="Digite sua pergunta..."
+              placeholder="Digite sua pergunta bíblica..."
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSend()}
