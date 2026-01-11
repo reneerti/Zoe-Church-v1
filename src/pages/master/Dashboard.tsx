@@ -4,7 +4,7 @@ import {
   Users, UserCheck, LogIn, UserPlus, TrendingUp, 
   BookOpen, Heart, MessageSquare, Sparkles, QrCode,
   ChevronLeft, Shield, Settings, Eye, EyeOff, Trash2,
-  RefreshCw, Download
+  RefreshCw, Download, Bell, BookMarked
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -473,6 +473,29 @@ export default function MasterDashboard() {
               </Dialog>
             </CardContent>
           </Card>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="grid grid-cols-2 gap-4 mb-6">
+          <Button 
+            variant="outline" 
+            className="h-auto py-4 flex flex-col items-center gap-2"
+            onClick={() => navigate(`/${slug}/painel/planos`)}
+          >
+            <BookMarked className="h-6 w-6 text-primary" />
+            <span className="font-medium">Planos de Leitura</span>
+            <span className="text-xs text-muted-foreground">Criar e gerenciar planos</span>
+          </Button>
+          
+          <Button 
+            variant="outline" 
+            className="h-auto py-4 flex flex-col items-center gap-2"
+            onClick={() => navigate(`/${slug}/painel/notificacoes`)}
+          >
+            <Bell className="h-6 w-6 text-primary" />
+            <span className="font-medium">Notificações</span>
+            <span className="text-xs text-muted-foreground">Enviar para membros</span>
+          </Button>
         </div>
 
         {/* Tabs */}

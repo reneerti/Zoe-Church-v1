@@ -13,8 +13,9 @@ import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Plus, BookOpen, Calendar, Users, Trash2, Eye, Send, Pencil } from 'lucide-react';
+import { ArrowLeft, Plus, BookOpen, Calendar, Users, Trash2, Eye, Send, Pencil, Copy, QrCode, Share2, Link } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -28,6 +29,8 @@ interface Plano {
   data_inicio: string;
   status: string;
   total_inscritos: number;
+  codigo_convite: string;
+  permite_inscricao_publica: boolean;
   created_at: string;
 }
 
@@ -49,6 +52,9 @@ export default function MasterPlanos() {
   const [planos, setPlanos] = useState<Plano[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [showCriarDialog, setShowCriarDialog] = useState(false);
+  const [showCompartilharDialog, setShowCompartilharDialog] = useState(false);
+  const [showEditarDialog, setShowEditarDialog] = useState(false);
+  const [planoSelecionado, setPlanoSelecionado] = useState<Plano | null>(null);
   const [criando, setCriando] = useState(false);
   
   const [form, setForm] = useState({
@@ -61,6 +67,13 @@ export default function MasterPlanos() {
     capitulosPorDia: 3,
     incluiSabado: true,
     incluiDomingo: true,
+    permiteInscricaoPublica: false,
+  });
+
+  const [editForm, setEditForm] = useState({
+    titulo: '',
+    descricao: '',
+    permiteInscricaoPublica: false,
   });
   
   useEffect(() => {
@@ -73,7 +86,6 @@ export default function MasterPlanos() {
     setLoading(true);
     
     try {
-      // Buscar planos existentes
       const { data: planosData, error: planosError } = await supabase
         .from('planos_leitura')
         .select('*')
@@ -83,7 +95,6 @@ export default function MasterPlanos() {
       if (planosError) throw planosError;
       setPlanos(planosData || []);
       
-      // Buscar templates
       const { data: templatesData, error: templatesError } = await supabase
         .from('planos_templates')
         .select('*')
@@ -109,7 +120,6 @@ export default function MasterPlanos() {
     setCriando(true);
     
     try {
-      // 1. Criar o plano
       const { data: plano, error: planoError } = await supabase
         .from('planos_leitura')
         .insert({
@@ -121,6 +131,7 @@ export default function MasterPlanos() {
           leituras_por_dia: form.capitulosPorDia,
           inclui_sabado: form.incluiSabado,
           inclui_domingo: form.incluiDomingo,
+          permite_inscricao_publica: form.permiteInscricaoPublica,
           status: 'rascunho',
           duracao_dias: 0,
           criado_por: user?.id,
@@ -130,7 +141,6 @@ export default function MasterPlanos() {
       
       if (planoError) throw planoError;
       
-      // 2. Gerar itens baseado no template
       let itensGerados = 0;
       
       if (form.template === 'biblia_1_ano') {
@@ -154,17 +164,7 @@ export default function MasterPlanos() {
       
       toast.success(`Plano criado com ${itensGerados} leituras!`);
       setShowCriarDialog(false);
-      setForm({
-        titulo: '',
-        descricao: '',
-        tipo: 'personalizado',
-        template: '',
-        dataInicio: new Date().toISOString().split('T')[0],
-        livrosSelecionados: [],
-        capitulosPorDia: 3,
-        incluiSabado: true,
-        incluiDomingo: true,
-      });
+      resetForm();
       fetchData();
       
     } catch (error) {
@@ -173,6 +173,21 @@ export default function MasterPlanos() {
     } finally {
       setCriando(false);
     }
+  };
+
+  const resetForm = () => {
+    setForm({
+      titulo: '',
+      descricao: '',
+      tipo: 'personalizado',
+      template: '',
+      dataInicio: new Date().toISOString().split('T')[0],
+      livrosSelecionados: [],
+      capitulosPorDia: 3,
+      incluiSabado: true,
+      incluiDomingo: true,
+      permiteInscricaoPublica: false,
+    });
   };
   
   const publicarPlano = async (planoId: string) => {
@@ -187,7 +202,7 @@ export default function MasterPlanos() {
       
       if (error) throw error;
       
-      toast.success('Plano publicado!');
+      toast.success('Plano publicado e disponível para inscrições!');
       fetchData();
       
     } catch (error) {
@@ -195,11 +210,70 @@ export default function MasterPlanos() {
       toast.error('Erro ao publicar plano');
     }
   };
-  
-  const excluirPlano = async (planoId: string) => {
-    if (!confirm('Tem certeza que deseja excluir este plano?')) return;
+
+  const despublicarPlano = async (planoId: string) => {
+    try {
+      const { error } = await supabase
+        .from('planos_leitura')
+        .update({ status: 'rascunho' })
+        .eq('id', planoId);
+      
+      if (error) throw error;
+      
+      toast.success('Plano movido para rascunho');
+      fetchData();
+      
+    } catch (error) {
+      console.error('Erro ao despublicar:', error);
+      toast.error('Erro ao despublicar plano');
+    }
+  };
+
+  const abrirEditar = (plano: Plano) => {
+    setPlanoSelecionado(plano);
+    setEditForm({
+      titulo: plano.titulo,
+      descricao: plano.descricao || '',
+      permiteInscricaoPublica: plano.permite_inscricao_publica,
+    });
+    setShowEditarDialog(true);
+  };
+
+  const salvarEdicao = async () => {
+    if (!planoSelecionado) return;
     
     try {
+      const { error } = await supabase
+        .from('planos_leitura')
+        .update({
+          titulo: editForm.titulo,
+          descricao: editForm.descricao,
+          permite_inscricao_publica: editForm.permiteInscricaoPublica,
+        })
+        .eq('id', planoSelecionado.id);
+      
+      if (error) throw error;
+      
+      toast.success('Plano atualizado!');
+      setShowEditarDialog(false);
+      fetchData();
+      
+    } catch (error) {
+      console.error('Erro ao atualizar:', error);
+      toast.error('Erro ao atualizar plano');
+    }
+  };
+
+  const abrirCompartilhar = (plano: Plano) => {
+    setPlanoSelecionado(plano);
+    setShowCompartilharDialog(true);
+  };
+  
+  const excluirPlano = async (planoId: string) => {
+    try {
+      // Primeiro excluir os itens
+      await supabase.from('planos_leitura_itens').delete().eq('plano_id', planoId);
+      
       const { error } = await supabase
         .from('planos_leitura')
         .delete()
@@ -226,16 +300,42 @@ export default function MasterPlanos() {
   };
   
   const selecionarTemplate = (templateId: string) => {
-    const template = templates.find(t => t.id === templateId);
-    if (template) {
+    if (templateId === 'biblia_1_ano') {
       setForm(f => ({
         ...f,
-        template: templateId,
-        titulo: template.titulo,
-        descricao: template.descricao,
-        tipo: template.tipo,
+        template: 'biblia_1_ano',
+        titulo: 'Bíblia em 1 Ano - ' + new Date().getFullYear(),
+        descricao: 'Leia toda a Bíblia em 365 dias com leituras diárias organizadas.',
+        tipo: 'anual',
       }));
+    } else {
+      const template = templates.find(t => t.id === templateId);
+      if (template) {
+        setForm(f => ({
+          ...f,
+          template: templateId,
+          titulo: template.titulo,
+          descricao: template.descricao,
+          tipo: template.tipo,
+        }));
+      }
     }
+  };
+
+  const copiarLink = (codigo: string) => {
+    const link = `${window.location.origin}/planos/entrar/${codigo}`;
+    navigator.clipboard.writeText(link);
+    toast.success('Link copiado!');
+  };
+
+  const copiarCodigo = (codigo: string) => {
+    navigator.clipboard.writeText(codigo);
+    toast.success('Código copiado!');
+  };
+
+  const getQrCodeUrl = (codigo: string) => {
+    const link = `${window.location.origin}/planos/entrar/${codigo}`;
+    return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(link)}`;
   };
 
   return (
@@ -248,7 +348,7 @@ export default function MasterPlanos() {
             </Button>
             <div>
               <h1 className="text-xl font-bold">Planos de Leitura</h1>
-              <p className="text-sm text-muted-foreground">Gerencie planos para sua comunidade</p>
+              <p className="text-sm text-muted-foreground">Crie e gerencie planos para sua comunidade</p>
             </div>
           </div>
           
@@ -274,45 +374,84 @@ export default function MasterPlanos() {
           planos.map(plano => (
             <Card key={plano.id} className="p-4">
               <div className="flex items-start justify-between mb-2">
-                <div>
-                  <h3 className="font-semibold">{plano.titulo}</h3>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className="font-semibold">{plano.titulo}</h3>
+                    <Badge variant={plano.status === 'publicado' ? 'default' : 'secondary'}>
+                      {plano.status === 'publicado' ? 'Publicado' : 'Rascunho'}
+                    </Badge>
+                  </div>
                   <p className="text-sm text-muted-foreground">
                     {plano.duracao_dias} dias • Criado em {format(new Date(plano.created_at), "d 'de' MMM", { locale: ptBR })}
                   </p>
                 </div>
-                <Badge variant={plano.status === 'publicado' ? 'default' : 'secondary'}>
-                  {plano.status === 'publicado' ? 'Publicado' : 'Rascunho'}
-                </Badge>
+                
+                {plano.codigo_convite && (
+                  <div className="text-right">
+                    <p className="text-xs text-muted-foreground">Código</p>
+                    <code className="text-sm font-mono font-bold text-primary">{plano.codigo_convite}</code>
+                  </div>
+                )}
               </div>
               
               {plano.descricao && (
-                <p className="text-sm text-muted-foreground mb-3">{plano.descricao}</p>
+                <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{plano.descricao}</p>
               )}
               
-              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
-                <Users className="h-4 w-4" />
-                <span>{plano.total_inscritos} inscritos</span>
+              <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
+                <span className="flex items-center gap-1">
+                  <Users className="h-4 w-4" />
+                  {plano.total_inscritos} inscritos
+                </span>
+                {plano.permite_inscricao_publica && (
+                  <Badge variant="outline" className="text-xs">Público</Badge>
+                )}
               </div>
               
-              <div className="flex gap-2">
-                {plano.status === 'rascunho' && (
+              <div className="flex flex-wrap gap-2">
+                {plano.status === 'rascunho' ? (
                   <Button size="sm" onClick={() => publicarPlano(plano.id)}>
                     <Send className="h-4 w-4 mr-1" />
                     Publicar
                   </Button>
+                ) : (
+                  <>
+                    <Button size="sm" variant="outline" onClick={() => abrirCompartilhar(plano)}>
+                      <Share2 className="h-4 w-4 mr-1" />
+                      Compartilhar
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => despublicarPlano(plano.id)}>
+                      Despublicar
+                    </Button>
+                  </>
                 )}
-                <Button size="sm" variant="outline">
-                  <Eye className="h-4 w-4 mr-1" />
-                  Ver
+                
+                <Button size="sm" variant="outline" onClick={() => abrirEditar(plano)}>
+                  <Pencil className="h-4 w-4 mr-1" />
+                  Editar
                 </Button>
-                <Button 
-                  size="sm" 
-                  variant="outline"
-                  className="text-destructive"
-                  onClick={() => excluirPlano(plano.id)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button size="sm" variant="outline" className="text-destructive">
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Excluir plano?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Esta ação não pode ser desfeita. Todas as inscrições e progressos serão perdidos.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => excluirPlano(plano.id)} className="bg-destructive text-destructive-foreground">
+                        Excluir
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
             </Card>
           ))
@@ -339,7 +478,6 @@ export default function MasterPlanos() {
           </DialogHeader>
           
           <div className="space-y-4">
-            {/* Templates */}
             <div>
               <Label>Modelo (opcional)</Label>
               <Select value={form.template} onValueChange={selecionarTemplate}>
@@ -348,7 +486,7 @@ export default function MasterPlanos() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="personalizado">Personalizado</SelectItem>
-                  <SelectItem value="biblia_1_ano">Bíblia em 1 Ano</SelectItem>
+                  <SelectItem value="biblia_1_ano">📖 Bíblia em 1 Ano</SelectItem>
                   {templates.map(t => (
                     <SelectItem key={t.id} value={t.id}>{t.titulo}</SelectItem>
                   ))}
@@ -356,7 +494,6 @@ export default function MasterPlanos() {
               </Select>
             </div>
             
-            {/* Título */}
             <div>
               <Label>Título do Plano</Label>
               <Input
@@ -366,7 +503,6 @@ export default function MasterPlanos() {
               />
             </div>
             
-            {/* Descrição */}
             <div>
               <Label>Descrição</Label>
               <Textarea
@@ -377,7 +513,6 @@ export default function MasterPlanos() {
               />
             </div>
             
-            {/* Data de início */}
             <div>
               <Label>Data de Início</Label>
               <Input
@@ -387,7 +522,6 @@ export default function MasterPlanos() {
               />
             </div>
             
-            {/* Configurações para plano personalizado */}
             {form.template !== 'biblia_1_ano' && (
               <>
                 <div>
@@ -423,21 +557,27 @@ export default function MasterPlanos() {
               </>
             )}
             
-            {/* Opções de dias */}
-            <div className="flex gap-4">
+            <div className="flex flex-wrap gap-4">
               <div className="flex items-center gap-2">
                 <Switch
                   checked={form.incluiSabado}
                   onCheckedChange={(v) => setForm(f => ({ ...f, incluiSabado: v }))}
                 />
-                <Label>Incluir Sábado</Label>
+                <Label>Sábado</Label>
               </div>
               <div className="flex items-center gap-2">
                 <Switch
                   checked={form.incluiDomingo}
                   onCheckedChange={(v) => setForm(f => ({ ...f, incluiDomingo: v }))}
                 />
-                <Label>Incluir Domingo</Label>
+                <Label>Domingo</Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <Switch
+                  checked={form.permiteInscricaoPublica}
+                  onCheckedChange={(v) => setForm(f => ({ ...f, permiteInscricaoPublica: v }))}
+                />
+                <Label>Público</Label>
               </div>
             </div>
           </div>
@@ -450,6 +590,110 @@ export default function MasterPlanos() {
               {criando ? 'Criando...' : 'Criar Plano'}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog para editar */}
+      <Dialog open={showEditarDialog} onOpenChange={setShowEditarDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar Plano</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div>
+              <Label>Título</Label>
+              <Input
+                value={editForm.titulo}
+                onChange={(e) => setEditForm(f => ({ ...f, titulo: e.target.value }))}
+              />
+            </div>
+            
+            <div>
+              <Label>Descrição</Label>
+              <Textarea
+                value={editForm.descricao}
+                onChange={(e) => setEditForm(f => ({ ...f, descricao: e.target.value }))}
+                rows={3}
+              />
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Switch
+                checked={editForm.permiteInscricaoPublica}
+                onCheckedChange={(v) => setEditForm(f => ({ ...f, permiteInscricaoPublica: v }))}
+              />
+              <Label>Permitir inscrição pública (qualquer pessoa com o código)</Label>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEditarDialog(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={salvarEdicao}>
+              Salvar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog para compartilhar */}
+      <Dialog open={showCompartilharDialog} onOpenChange={setShowCompartilharDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Compartilhar Plano</DialogTitle>
+          </DialogHeader>
+          
+          {planoSelecionado && (
+            <div className="space-y-6">
+              <div className="text-center">
+                <h3 className="font-semibold mb-2">{planoSelecionado.titulo}</h3>
+                <p className="text-sm text-muted-foreground">{planoSelecionado.descricao}</p>
+              </div>
+
+              {/* Código */}
+              <div className="text-center p-4 bg-muted rounded-lg">
+                <p className="text-sm text-muted-foreground mb-2">Código de acesso</p>
+                <div className="flex items-center justify-center gap-2">
+                  <code className="text-2xl font-mono font-bold text-primary tracking-widest">
+                    {planoSelecionado.codigo_convite}
+                  </code>
+                  <Button size="icon" variant="ghost" onClick={() => copiarCodigo(planoSelecionado.codigo_convite)}>
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+
+              {/* QR Code */}
+              <div className="flex justify-center">
+                <img 
+                  src={getQrCodeUrl(planoSelecionado.codigo_convite)} 
+                  alt="QR Code" 
+                  className="w-48 h-48 rounded-lg"
+                />
+              </div>
+
+              {/* Link */}
+              <div>
+                <Label className="mb-2 block">Link de convite</Label>
+                <div className="flex gap-2">
+                  <Input
+                    readOnly
+                    value={`${window.location.origin}/planos/entrar/${planoSelecionado.codigo_convite}`}
+                    className="text-xs"
+                  />
+                  <Button size="icon" variant="outline" onClick={() => copiarLink(planoSelecionado.codigo_convite)}>
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+
+              <p className="text-xs text-muted-foreground text-center">
+                Compartilhe o código ou QR Code com os membros para que eles possam participar do plano de leitura.
+              </p>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
