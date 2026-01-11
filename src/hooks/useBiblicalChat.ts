@@ -1,14 +1,15 @@
 import { useState, useCallback } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 type Message = { role: "user" | "assistant"; content: string };
 
-const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/biblical-chat`;
-
 export function useBiblicalChat() {
+  const { session } = useAuth();
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
-      content: "Olá! 👋 Sou o Zoe AI, assistente bíblico da ZOE Church. Como posso ajudá-lo hoje? Você pode me perguntar sobre versículos, contexto histórico, ou pedir orientação espiritual baseada na Palavra de Deus.",
+      content: "Olá! 👋 Sou o Zoe AI, assistente bíblico. Como posso ajudá-lo hoje? Você pode me perguntar sobre versículos, contexto histórico, ou pedir orientação espiritual baseada na Palavra de Deus.",
     },
   ]);
   const [isLoading, setIsLoading] = useState(false);
@@ -36,22 +37,32 @@ export function useBiblicalChat() {
     };
 
     try {
-      const resp = await fetch(CHAT_URL, {
+      // Use Supabase functions URL directly
+      const functionUrl = `https://allfhenlhsjkuatczato.supabase.co/functions/v1/biblical-chat`;
+      
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+        "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFsbGZoZW5saHNqa3VhdGN6YXRvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgxMDIyOTUsImV4cCI6MjA4MzY3ODI5NX0.kCFkQ4iB_8fjxi7IHhpyqUVP0y0aIIGX6xtVNIWpIpE",
+      };
+
+      // Add auth header if user is logged in
+      if (session?.access_token) {
+        headers["Authorization"] = `Bearer ${session.access_token}`;
+      }
+
+      const resp = await fetch(functionUrl, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
+        headers,
         body: JSON.stringify({ messages: [...messages, userMsg] }),
       });
 
       if (!resp.ok) {
         const errorData = await resp.json().catch(() => ({}));
         if (resp.status === 429) {
-          throw new Error(errorData.error || "Muitas requisições. Aguarde um momento.");
+          throw new Error(errorData.error || "Você atingiu o limite diário de consultas. Tente novamente amanhã! 🙏");
         }
         if (resp.status === 402) {
-          throw new Error(errorData.error || "Limite de uso atingido.");
+          throw new Error(errorData.error || "Limite de uso atingido para hoje.");
         }
         throw new Error(errorData.error || "Erro ao processar mensagem");
       }
@@ -118,12 +129,12 @@ export function useBiblicalChat() {
     } finally {
       setIsLoading(false);
     }
-  }, [messages, isLoading]);
+  }, [messages, isLoading, session]);
 
   const clearMessages = useCallback(() => {
     setMessages([{
       role: "assistant",
-      content: "Olá! 👋 Sou o Zoe AI, assistente bíblico da ZOE Church. Como posso ajudá-lo hoje?",
+      content: "Olá! 👋 Sou o Zoe AI, assistente bíblico. Como posso ajudá-lo hoje?",
     }]);
     setError(null);
   }, []);

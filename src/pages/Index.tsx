@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { 
   BookOpen, 
   Music, 
@@ -6,7 +7,9 @@ import {
   Gift, 
   Video,
   Users,
-  UserPlus
+  UserPlus,
+  Shield,
+  Settings
 } from "lucide-react";
 import { Header } from "@/components/layout/Header";
 import { PageContainer } from "@/components/layout/PageContainer";
@@ -14,6 +17,10 @@ import { BottomNav } from "@/components/layout/BottomNav";
 import { ModuleCard } from "@/components/home/ModuleCard";
 import { DailyVerse } from "@/components/home/DailyVerse";
 import { QuickActions } from "@/components/home/QuickActions";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
 const modules = [
   {
@@ -74,7 +81,45 @@ const modules = [
   },
 ];
 
+interface UnidadeInfo {
+  nome_fantasia: string;
+  apelido_app: string;
+  logo_url: string | null;
+  logo_icon_url: string | null;
+  cor_primaria: string | null;
+}
+
 export default function Index() {
+  const { user, profile, isSuperUser, isMaster, unidadeSlug } = useAuth();
+  const navigate = useNavigate();
+  const [unidade, setUnidade] = useState<UnidadeInfo | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchUnidade = async () => {
+      if (profile?.unidadeId) {
+        const { data } = await supabase
+          .from("unidades")
+          .select("nome_fantasia, apelido_app, logo_url, logo_icon_url, cor_primaria")
+          .eq("id", profile.unidadeId)
+          .single();
+        
+        if (data) {
+          setUnidade(data);
+        }
+      }
+      setLoading(false);
+    };
+
+    if (profile) {
+      fetchUnidade();
+    } else {
+      setLoading(false);
+    }
+  }, [profile]);
+
+  const churchName = unidade?.apelido_app || unidade?.nome_fantasia || "Minha Igreja";
+
   return (
     <>
       <Header showSearch showNotifications />
@@ -82,9 +127,39 @@ export default function Index() {
       <PageContainer>
         {/* Greeting */}
         <div className="pt-4 pb-2 opacity-0 animate-fade-in">
-          <p className="text-muted-foreground text-sm">Bem-vindo(a) à</p>
-          <h2 className="text-2xl font-bold text-foreground">ZOE CHURCH</h2>
+          <p className="text-muted-foreground text-sm">
+            {user ? `Olá, ${profile?.nome || 'bem-vindo(a)'}!` : 'Bem-vindo(a) à'}
+          </p>
+          <h2 className="text-2xl font-bold text-foreground">{churchName.toUpperCase()}</h2>
         </div>
+
+        {/* Admin/Master Quick Access */}
+        {(isSuperUser || isMaster) && (
+          <div className="py-3 flex gap-2 opacity-0 animate-fade-in" style={{ animationDelay: "50ms" }}>
+            {isSuperUser && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="gap-2"
+                onClick={() => navigate("/admin")}
+              >
+                <Shield className="h-4 w-4" />
+                Painel Admin
+              </Button>
+            )}
+            {isMaster && unidadeSlug && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="gap-2"
+                onClick={() => navigate(`/${unidadeSlug}/painel`)}
+              >
+                <Settings className="h-4 w-4" />
+                Painel Master
+              </Button>
+            )}
+          </div>
+        )}
 
         {/* Quick Actions */}
         <div className="py-3">

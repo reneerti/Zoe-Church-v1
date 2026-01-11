@@ -1,12 +1,14 @@
 import { useState, useRef, useEffect } from "react";
-import { ChevronLeft, Send, Sparkles, Bot, User, RefreshCw, AlertCircle } from "lucide-react";
+import { ChevronLeft, Send, Sparkles, Bot, User, RefreshCw, AlertCircle, Info } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { cn } from "@/lib/utils";
 import { useBiblicalChat } from "@/hooks/useBiblicalChat";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const suggestedQuestions = [
   "O que significa João 3:16?",
@@ -19,6 +21,7 @@ const suggestedQuestions = [
 
 export default function Chat() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { messages, isLoading, error, sendMessage, clearMessages } = useBiblicalChat();
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -84,6 +87,24 @@ export default function Chat() {
       </header>
 
       <div className="flex flex-col h-[calc(100vh-56px-80px)] max-w-lg mx-auto">
+        {/* Login Notice */}
+        {!user && (
+          <div className="px-4 pt-3">
+            <Alert>
+              <Info className="h-4 w-4" />
+              <AlertDescription className="text-sm">
+                <button 
+                  onClick={() => navigate("/auth")}
+                  className="text-primary font-medium hover:underline"
+                >
+                  Faça login
+                </button>
+                {" "}para ter acesso completo ao assistente bíblico.
+              </AlertDescription>
+            </Alert>
+          </div>
+        )}
+
         {/* Messages */}
         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
           {messages.map((message, index) => (
@@ -135,7 +156,7 @@ export default function Chat() {
 
           {error && (
             <div className="flex items-center gap-2 p-3 bg-destructive/10 text-destructive rounded-lg">
-              <AlertCircle className="h-4 w-4" />
+              <AlertCircle className="h-4 w-4 flex-shrink-0" />
               <p className="text-sm">{error}</p>
             </div>
           )}

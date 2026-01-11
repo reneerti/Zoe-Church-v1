@@ -5,3 +5,9 @@ verify_jwt = false
 
 [functions.import-bible]
 verify_jwt = false
+
+[functions.populate-database]
+verify_jwt = false
+
+[functions.send-convite-email]
+verify_jwt = false
