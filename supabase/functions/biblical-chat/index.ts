@@ -6,7 +6,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const SYSTEM_PROMPT = `Você é um assistente bíblico especializado da ZOE Church, chamado "Zoe AI". Seu objetivo é ajudar os fiéis a entender a Palavra de Deus com profundidade e clareza.
+const SYSTEM_PROMPT = `Você é um assistente bíblico especializado, chamado "Zoe AI". Seu objetivo é ajudar os fiéis a entender a Palavra de Deus com profundidade e clareza.
 
 SUAS CAPACIDADES:
 - Explicar versículos bíblicos com contexto histórico, cultural e teológico
@@ -29,9 +29,9 @@ FORMATO DE RESPOSTA:
 - Comece com a resposta principal
 - Cite versículos relevantes
 - Quando apropriado, adicione contexto histórico
-- Termine com uma aplicação prática ou encorajamento
+- Termine com uma aplicação prática ou encorajamento`;
 
-Você faz parte do app da ZOE Church, uma igreja cristã que valoriza o estudo profundo das Escrituras e a aplicação prática da fé no dia a dia.`;
+const SIMILARIDADE_MINIMA = 0.92;
 
 // Função para normalizar pergunta (remover acentos, lowercase, etc.)
 function normalizarPergunta(pergunta: string): string {
@@ -51,6 +51,53 @@ async function criarHash(texto: string): Promise<string> {
   const hashBuffer = await crypto.subtle.digest("SHA-256", data);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
   return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
+// Função para gerar embedding via Lovable AI (text-embedding-3-small)
+async function gerarEmbedding(texto: string, apiKey: string): Promise<number[] | null> {
+  try {
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/embeddings", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "openai/text-embedding-3-small",
+        input: texto,
+      }),
+    });
+
+    if (!response.ok) {
+      console.error("Erro ao gerar embedding:", response.status);
+      return null;
+    }
+
+    const data = await response.json();
+    return data.data?.[0]?.embedding || null;
+  } catch (error) {
+    console.error("Erro ao gerar embedding:", error);
+    return null;
+  }
+}
+
+// Função para detectar categoria da pergunta
+function detectarCategoria(pergunta: string): string {
+  const p = pergunta.toLowerCase();
+  
+  if (/deus|senhor|jeová|pai celestial|criador/.test(p)) return 'deus';
+  if (/jesus|cristo|messias|salvador|filho de deus/.test(p)) return 'jesus';
+  if (/espírito santo|espírito|consolador/.test(p)) return 'espirito_santo';
+  if (/salvação|salvo|salvar|redenção/.test(p)) return 'salvacao';
+  if (/oração|orar|rezar|prece/.test(p)) return 'oracao';
+  if (/fé|crer|acreditar|crença/.test(p)) return 'fe';
+  if (/amor|amar|caridade|compaixão/.test(p)) return 'amor';
+  if (/pecado|pecar|tentação|perdão/.test(p)) return 'pecado';
+  if (/céu|paraíso|vida eterna|eternidade/.test(p)) return 'escatologia';
+  if (/igreja|comunhão|corpo de cristo/.test(p)) return 'igreja';
+  if (/profecia|apocalipse|fim dos tempos/.test(p)) return 'profecia';
+  
+  return 'geral';
 }
 
 serve(async (req) => {
@@ -115,7 +162,7 @@ serve(async (req) => {
     }
 
     // ==========================================
-    // RATE LIMIT CHECK
+    // RATE LIMIT CHECK (por unidade/usuário)
     // ==========================================
     if (userId && unidadeId) {
       // Buscar limite da unidade
@@ -144,7 +191,6 @@ serve(async (req) => {
         .single();
 
       const requisicoesHoje = rateLimit?.requisicoes_hoje || 0;
-      const limiteRestante = limiteMax - requisicoesHoje;
 
       if (requisicoesHoje >= limiteMax) {
         return new Response(
@@ -181,32 +227,33 @@ serve(async (req) => {
     }
 
     // ==========================================
-    // CACHE SEMÂNTICO
+    // CACHE GLOBAL (compartilhado entre unidades)
     // ==========================================
     const ultimaMensagem = messages[messages.length - 1]?.content || "";
     const perguntaNormalizada = normalizarPergunta(ultimaMensagem);
     const hashPergunta = await criarHash(perguntaNormalizada);
+    const categoria = detectarCategoria(ultimaMensagem);
 
-    // 1. Tentar cache exato (por hash)
+    // 1. Tentar cache exato (por hash) - MAIS RÁPIDO
     const { data: cacheExato } = await supabase
       .from("ai_cache_semantico")
-      .select("id, resposta")
+      .select("id, resposta, hits")
       .eq("hash_pergunta", hashPergunta)
       .single();
 
     if (cacheExato) {
-      console.log("Cache HIT (exato):", hashPergunta);
+      console.log("✅ Cache HIT (exato):", hashPergunta.substring(0, 16));
       
       // Incrementar hits
       await supabase
         .from("ai_cache_semantico")
         .update({ 
-          hits: (cacheExato as any).hits + 1 || 1,
+          hits: (cacheExato.hits || 0) + 1,
           last_hit_at: new Date().toISOString()
         })
         .eq("id", cacheExato.id);
 
-      // Registrar consumo como cache
+      // Registrar consumo como cache (por unidade para métricas)
       if (userId && unidadeId) {
         await supabase.from("ai_consumo").insert({
           user_id: userId,
@@ -219,39 +266,45 @@ serve(async (req) => {
       }
 
       // Retornar resposta cacheada como stream simulado
-      const encoder = new TextEncoder();
-      const stream = new ReadableStream({
-        start(controller) {
-          const words = cacheExato.resposta.split(" ");
-          let index = 0;
-          
-          const sendWord = () => {
-            if (index < words.length) {
-              const chunk = {
-                choices: [{
-                  delta: { content: (index === 0 ? "" : " ") + words[index] }
-                }]
-              };
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify(chunk)}\n\n`));
-              index++;
-              setTimeout(sendWord, 20);
-            } else {
-              controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-              controller.close();
-            }
-          };
-          
-          sendWord();
-        }
-      });
-
-      return new Response(stream, {
-        headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
-      });
+      return streamCachedResponse(cacheExato.resposta, corsHeaders);
     }
 
-    // 2. Se não encontrou cache exato, chamar IA
-    console.log("Cache MISS, chamando IA...");
+    // 2. Tentar cache semântico (por embedding) - BUSCA SIMILAR
+    const embedding = await gerarEmbedding(perguntaNormalizada, LOVABLE_API_KEY);
+    
+    if (embedding) {
+      const { data: cacheSimilar } = await supabase.rpc('buscar_cache_similar_global', {
+        p_embedding: `[${embedding.join(',')}]`,
+        p_similaridade_minima: SIMILARIDADE_MINIMA,
+        p_limite: 1,
+        p_categoria: null // Buscar em todas as categorias
+      });
+
+      if (cacheSimilar && cacheSimilar.length > 0) {
+        const match = cacheSimilar[0];
+        console.log(`✅ Cache HIT (semântico): ${(match.similaridade * 100).toFixed(1)}%`);
+        
+        // Incrementar hits do cache encontrado
+        await supabase.rpc('incrementar_hit_cache', { p_cache_id: match.id });
+
+        // Registrar consumo como cache
+        if (userId && unidadeId) {
+          await supabase.from("ai_consumo").insert({
+            user_id: userId,
+            unidade_id: unidadeId,
+            tipo: "chat",
+            foi_cache: true,
+            cache_key: match.id,
+            prompt_resumo: ultimaMensagem.substring(0, 100)
+          });
+        }
+
+        return streamCachedResponse(match.resposta, corsHeaders);
+      }
+    }
+
+    // 3. Cache MISS - Chamar IA
+    console.log("❌ Cache MISS, chamando Lovable AI...");
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -315,24 +368,30 @@ serve(async (req) => {
         }
       },
       async flush() {
-        // Salvar no cache após a resposta completa
+        // Salvar no CACHE GLOBAL após a resposta completa
         if (respostaCompleta.length > 50) {
           try {
+            // Salvar com embedding para busca semântica futura
+            const novoEmbedding = embedding ? `[${embedding.join(',')}]` : null;
+            
             await supabase.from("ai_cache_semantico").insert({
               pergunta_original: ultimaMensagem,
               pergunta_normalizada: perguntaNormalizada,
               hash_pergunta: hashPergunta,
+              embedding: novoEmbedding,
+              categoria: categoria,
               resposta: respostaCompleta,
               modelo: "google/gemini-3-flash-preview",
-              tokens_usados: Math.ceil(respostaCompleta.length / 4)
+              tokens_usados: Math.ceil(respostaCompleta.length / 4),
+              expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString() // 1 ano
             });
-            console.log("Resposta salva no cache:", hashPergunta);
+            console.log("💾 Resposta salva no cache global:", hashPergunta.substring(0, 16));
           } catch (e) {
             console.error("Erro ao salvar cache:", e);
           }
         }
 
-        // Registrar consumo
+        // Registrar consumo (por unidade para métricas)
         if (userId && unidadeId) {
           await supabase.from("ai_consumo").insert({
             user_id: userId,
@@ -358,3 +417,36 @@ serve(async (req) => {
     );
   }
 });
+
+// Função auxiliar para simular stream de resposta cacheada
+function streamCachedResponse(resposta: string, headers: Record<string, string>) {
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream({
+    start(controller) {
+      const words = resposta.split(" ");
+      let index = 0;
+      
+      const sendWord = () => {
+        if (index < words.length) {
+          const chunk = {
+            choices: [{
+              delta: { content: (index === 0 ? "" : " ") + words[index] }
+            }]
+          };
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(chunk)}\n\n`));
+          index++;
+          setTimeout(sendWord, 15); // 15ms entre palavras para simular streaming
+        } else {
+          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+          controller.close();
+        }
+      };
+      
+      sendWord();
+    }
+  });
+
+  return new Response(stream, {
+    headers: { ...headers, "Content-Type": "text/event-stream" },
+  });
+}

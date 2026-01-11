@@ -51,9 +51,11 @@ export type Database = {
       }
       ai_cache_semantico: {
         Row: {
+          categoria: string | null
           contexto: Json | null
           created_at: string | null
           embedding: string | null
+          expires_at: string | null
           hash_pergunta: string
           hits: number | null
           id: string
@@ -66,9 +68,11 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          categoria?: string | null
           contexto?: Json | null
           created_at?: string | null
           embedding?: string | null
+          expires_at?: string | null
           hash_pergunta: string
           hits?: number | null
           id?: string
@@ -81,9 +85,11 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          categoria?: string | null
           contexto?: Json | null
           created_at?: string | null
           embedding?: string | null
+          expires_at?: string | null
           hash_pergunta?: string
           hits?: number | null
           id?: string
@@ -1584,6 +1590,35 @@ export type Database = {
         Args: { check_unidade_id: string }
         Returns: boolean
       }
+      buscar_cache_similar_global: {
+        Args: {
+          p_categoria?: string
+          p_embedding: string
+          p_limite?: number
+          p_similaridade_minima?: number
+        }
+        Returns: {
+          categoria: string
+          id: string
+          pergunta_original: string
+          resposta: string
+          similaridade: number
+        }[]
+      }
+      buscar_cache_versiculo: {
+        Args: {
+          p_capitulo: number
+          p_livro: string
+          p_tipo?: string
+          p_versiculo_fim?: number
+          p_versiculo_inicio: number
+        }
+        Returns: {
+          hits: number
+          id: string
+          resposta: string
+        }[]
+      }
       buscar_similar_cache: {
         Args: {
           p_embedding: string
@@ -1600,6 +1635,10 @@ export type Database = {
         Args: { p_tokens?: number; p_user_id: string }
         Returns: undefined
       }
+      detectar_categoria_pergunta: {
+        Args: { p_pergunta: string }
+        Returns: string
+      }
       get_user_unidade_id: { Args: never; Returns: string }
       incrementar_hit_cache: {
         Args: { p_cache_id: string }
@@ -1607,6 +1646,19 @@ export type Database = {
       }
       is_master_of: { Args: { check_unidade_id: string }; Returns: boolean }
       is_super_user: { Args: never; Returns: boolean }
+      salvar_cache_versiculo: {
+        Args: {
+          p_capitulo: number
+          p_livro: string
+          p_modelo?: string
+          p_resposta: string
+          p_tipo: string
+          p_tokens?: number
+          p_versiculo_fim: number
+          p_versiculo_inicio: number
+        }
+        Returns: string
+      }
       verificar_rate_limit: {
         Args: { p_unidade_id: string; p_user_id: string }
         Returns: {
