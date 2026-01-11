@@ -49,6 +49,54 @@ export type Database = {
           },
         ]
       }
+      ai_cache_semantico: {
+        Row: {
+          contexto: Json | null
+          created_at: string | null
+          embedding: string | null
+          hash_pergunta: string
+          hits: number | null
+          id: string
+          last_hit_at: string | null
+          modelo: string | null
+          pergunta_normalizada: string
+          pergunta_original: string
+          resposta: string
+          tokens_usados: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          contexto?: Json | null
+          created_at?: string | null
+          embedding?: string | null
+          hash_pergunta: string
+          hits?: number | null
+          id?: string
+          last_hit_at?: string | null
+          modelo?: string | null
+          pergunta_normalizada: string
+          pergunta_original: string
+          resposta: string
+          tokens_usados?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          contexto?: Json | null
+          created_at?: string | null
+          embedding?: string | null
+          hash_pergunta?: string
+          hits?: number | null
+          id?: string
+          last_hit_at?: string | null
+          modelo?: string | null
+          pergunta_normalizada?: string
+          pergunta_original?: string
+          resposta?: string
+          tokens_usados?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       ai_cache_versiculos: {
         Row: {
           cache_key: string
@@ -1528,13 +1576,46 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      atualizar_metricas_diarias: {
+        Args: { p_unidade_id: string }
+        Returns: undefined
+      }
       belongs_to_unidade: {
         Args: { check_unidade_id: string }
         Returns: boolean
       }
+      buscar_similar_cache: {
+        Args: {
+          p_embedding: string
+          p_limite_resultados?: number
+          p_limite_similaridade?: number
+        }
+        Returns: {
+          id: string
+          resposta: string
+          similaridade: number
+        }[]
+      }
+      consumir_rate_limit: {
+        Args: { p_tokens?: number; p_user_id: string }
+        Returns: undefined
+      }
       get_user_unidade_id: { Args: never; Returns: string }
+      incrementar_hit_cache: {
+        Args: { p_cache_id: string }
+        Returns: undefined
+      }
       is_master_of: { Args: { check_unidade_id: string }; Returns: boolean }
       is_super_user: { Args: never; Returns: boolean }
+      verificar_rate_limit: {
+        Args: { p_unidade_id: string; p_user_id: string }
+        Returns: {
+          limite_restante: number
+          limite_total: number
+          permitido: boolean
+          proxima_liberacao: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
