@@ -1,6 +1,7 @@
 import { Bell, Search, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import logoZoe from '@/assets/logo-zoe.png';
 
 interface HeaderProps {
   title?: string;
@@ -9,6 +10,7 @@ interface HeaderProps {
   showMenu?: boolean;
   className?: string;
   transparent?: boolean;
+  showLogo?: boolean;
 }
 
 export function Header({ 
@@ -17,7 +19,8 @@ export function Header({
   showNotifications = true,
   showMenu = false,
   className,
-  transparent = false
+  transparent = false,
+  showLogo = false
 }: HeaderProps) {
   return (
     <header className={cn(
@@ -32,7 +35,11 @@ export function Header({
               <Menu className="h-5 w-5" />
             </Button>
           )}
-          <h1 className="font-bold text-lg tracking-tight">{title}</h1>
+          {showLogo ? (
+            <img src={logoZoe} alt="Zoe Church" className="h-8 w-auto" />
+          ) : (
+            <h1 className="font-bold text-lg tracking-tight">{title}</h1>
+          )}
         </div>
         
         <div className="flex items-center gap-1">
