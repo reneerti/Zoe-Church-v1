@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { TermosMiddleware } from "@/components/TermosMiddleware";
 import Index from "./pages/Index";
 import Biblia from "./pages/Biblia";
 import LivroCapitulos from "./pages/LivroCapitulos";
@@ -37,38 +38,40 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/biblia" element={<Biblia />} />
-            <Route path="/biblia/:bookId" element={<LivroCapitulos />} />
-            <Route path="/biblia/:bookId/:chapter" element={<LeituraCapitulo />} />
-            <Route path="/harpa" element={<Harpa />} />
-            <Route path="/harpa/:hinoId" element={<HinoDetalhes />} />
-            <Route path="/agenda" element={<Agenda />} />
-            <Route path="/devocional" element={<Devocional />} />
-            <Route path="/ofertas" element={<Ofertas />} />
-            <Route path="/videos" element={<Videos />} />
-            <Route path="/lideranca" element={<Lideranca />} />
-            <Route path="/novos-convertidos" element={<NovosConvertidos />} />
-            <Route path="/perfil" element={<Perfil />} />
-            <Route path="/chat" element={<Chat />} />
-            <Route path="/termos" element={<TermosAceite />} />
-            
-            {/* Admin Routes */}
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/admin/import" element={<AdminImport />} />
-            <Route path="/admin/unidade/:unidadeId/convites" element={<AdminConvites />} />
-            <Route path="/admin/audit" element={<AdminAuditLog />} />
-            
-            {/* Master Routes */}
-            <Route path="/:slug/painel" element={<MasterDashboard />} />
-            
-            {/* Convite */}
-            <Route path="/convite/:codigo" element={<AceitarConvite />} />
-            
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <TermosMiddleware>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/biblia" element={<Biblia />} />
+              <Route path="/biblia/:bookId" element={<LivroCapitulos />} />
+              <Route path="/biblia/:bookId/:chapter" element={<LeituraCapitulo />} />
+              <Route path="/harpa" element={<Harpa />} />
+              <Route path="/harpa/:hinoId" element={<HinoDetalhes />} />
+              <Route path="/agenda" element={<Agenda />} />
+              <Route path="/devocional" element={<Devocional />} />
+              <Route path="/ofertas" element={<Ofertas />} />
+              <Route path="/videos" element={<Videos />} />
+              <Route path="/lideranca" element={<Lideranca />} />
+              <Route path="/novos-convertidos" element={<NovosConvertidos />} />
+              <Route path="/perfil" element={<Perfil />} />
+              <Route path="/chat" element={<Chat />} />
+              <Route path="/termos" element={<TermosAceite />} />
+              
+              {/* Admin Routes */}
+              <Route path="/admin" element={<AdminDashboard />} />
+              <Route path="/admin/import" element={<AdminImport />} />
+              <Route path="/admin/unidade/:unidadeId/convites" element={<AdminConvites />} />
+              <Route path="/admin/audit" element={<AdminAuditLog />} />
+              
+              {/* Master Routes */}
+              <Route path="/:slug/painel" element={<MasterDashboard />} />
+              
+              {/* Convite */}
+              <Route path="/convite/:codigo" element={<AceitarConvite />} />
+              
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </TermosMiddleware>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
