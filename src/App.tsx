@@ -31,8 +31,10 @@ import AdminAuditLog from "./pages/admin/AuditLog";
 import AceitarConvite from "./pages/AceitarConvite";
 import MasterDashboard from "./pages/master/Dashboard";
 import MasterPlanos from "./pages/master/Planos";
+import MasterNotificacoes from "./pages/master/Notificacoes";
 import TermosAceite from "./pages/TermosAceite";
 import MeusPlanos from "./pages/MeusPlanos";
+import EntrarPlano from "./pages/EntrarPlano";
 
 const queryClient = new QueryClient();
 
@@ -68,6 +70,8 @@ const App = () => (
               <Route path="/perfil" element={<AuthenticatedRoute><Perfil /></AuthenticatedRoute>} />
               <Route path="/chat" element={<AuthenticatedRoute><Chat /></AuthenticatedRoute>} />
               <Route path="/planos" element={<AuthenticatedRoute><MeusPlanos /></AuthenticatedRoute>} />
+              <Route path="/planos/entrar" element={<AuthenticatedRoute><EntrarPlano /></AuthenticatedRoute>} />
+              <Route path="/planos/entrar/:codigo" element={<AuthenticatedRoute><EntrarPlano /></AuthenticatedRoute>} />
               
               {/* Super User Routes */}
               <Route path="/admin" element={<SuperUserRoute><AdminDashboard /></SuperUserRoute>} />
@@ -78,6 +82,7 @@ const App = () => (
               {/* Master Routes */}
               <Route path="/:slug/painel" element={<MasterRoute><MasterDashboard /></MasterRoute>} />
               <Route path="/:slug/painel/planos" element={<MasterRoute><MasterPlanos /></MasterRoute>} />
+              <Route path="/:slug/painel/notificacoes" element={<MasterRoute><MasterNotificacoes /></MasterRoute>} />
               
               <Route path="*" element={<NotFound />} />
             </Routes>

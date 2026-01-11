@@ -896,8 +896,112 @@ export type Database = {
           },
         ]
       }
+      notificacoes: {
+        Row: {
+          created_at: string | null
+          criado_por: string | null
+          destinatarios_ids: string[] | null
+          destinatarios_tipo: string | null
+          enviada_em: string | null
+          icone: string | null
+          id: string
+          link_acao: string | null
+          mensagem: string
+          programada_para: string | null
+          status: string | null
+          tipo: string | null
+          titulo: string
+          total_enviados: number | null
+          total_lidos: number | null
+          unidade_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          criado_por?: string | null
+          destinatarios_ids?: string[] | null
+          destinatarios_tipo?: string | null
+          enviada_em?: string | null
+          icone?: string | null
+          id?: string
+          link_acao?: string | null
+          mensagem: string
+          programada_para?: string | null
+          status?: string | null
+          tipo?: string | null
+          titulo: string
+          total_enviados?: number | null
+          total_lidos?: number | null
+          unidade_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          criado_por?: string | null
+          destinatarios_ids?: string[] | null
+          destinatarios_tipo?: string | null
+          enviada_em?: string | null
+          icone?: string | null
+          id?: string
+          link_acao?: string | null
+          mensagem?: string
+          programada_para?: string | null
+          status?: string | null
+          tipo?: string | null
+          titulo?: string
+          total_enviados?: number | null
+          total_lidos?: number | null
+          unidade_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notificacoes_unidade_id_fkey"
+            columns: ["unidade_id"]
+            isOneToOne: false
+            referencedRelation: "unidades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notificacoes_usuarios: {
+        Row: {
+          clicada_em: string | null
+          id: string
+          lida_em: string | null
+          notificacao_id: string | null
+          recebida_em: string | null
+          user_id: string
+        }
+        Insert: {
+          clicada_em?: string | null
+          id?: string
+          lida_em?: string | null
+          notificacao_id?: string | null
+          recebida_em?: string | null
+          user_id: string
+        }
+        Update: {
+          clicada_em?: string | null
+          id?: string
+          lida_em?: string | null
+          notificacao_id?: string | null
+          recebida_em?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notificacoes_usuarios_notificacao_id_fkey"
+            columns: ["notificacao_id"]
+            isOneToOne: false
+            referencedRelation: "notificacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       planos_leitura: {
         Row: {
+          codigo_convite: string | null
           created_at: string | null
           criado_por: string | null
           data_fim: string | null
@@ -909,6 +1013,8 @@ export type Database = {
           inclui_domingo: boolean | null
           inclui_sabado: boolean | null
           leituras_por_dia: number | null
+          max_inscritos: number | null
+          permite_inscricao_publica: boolean | null
           publicado_em: string | null
           status: string | null
           tipo: string
@@ -919,6 +1025,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          codigo_convite?: string | null
           created_at?: string | null
           criado_por?: string | null
           data_fim?: string | null
@@ -930,6 +1037,8 @@ export type Database = {
           inclui_domingo?: boolean | null
           inclui_sabado?: boolean | null
           leituras_por_dia?: number | null
+          max_inscritos?: number | null
+          permite_inscricao_publica?: boolean | null
           publicado_em?: string | null
           status?: string | null
           tipo?: string
@@ -940,6 +1049,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          codigo_convite?: string | null
           created_at?: string | null
           criado_por?: string | null
           data_fim?: string | null
@@ -951,6 +1061,8 @@ export type Database = {
           inclui_domingo?: boolean | null
           inclui_sabado?: boolean | null
           leituras_por_dia?: number | null
+          max_inscritos?: number | null
+          permite_inscricao_publica?: boolean | null
           publicado_em?: string | null
           status?: string | null
           tipo?: string
@@ -1978,6 +2090,18 @@ export type Database = {
           hits: number
           id: string
           resposta: string
+        }[]
+      }
+      buscar_plano_por_codigo: {
+        Args: { p_codigo: string }
+        Returns: {
+          codigo_convite: string
+          descricao: string
+          duracao_dias: number
+          id: string
+          titulo: string
+          total_inscritos: number
+          unidade_nome: string
         }[]
       }
       buscar_similar_cache: {
