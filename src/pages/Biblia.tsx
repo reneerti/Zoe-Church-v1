@@ -107,7 +107,7 @@ export default function Biblia() {
                 ))}
               </SelectContent>
             </Select>
-            <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => navigate("/busca-biblia")}>
+            <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => navigate("/biblia/busca")}>
               <Search className="h-5 w-5" />
             </Button>
             <Button variant="ghost" size="icon" className="h-9 w-9">
