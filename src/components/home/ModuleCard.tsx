@@ -1,4 +1,4 @@
-import { LucideIcon } from "lucide-react";
+import { LucideIcon, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
@@ -27,28 +27,31 @@ export function ModuleCard({
     <button
       onClick={() => navigate(path)}
       className={cn(
-        "module-card w-full text-left opacity-0 animate-fade-in transition-all duration-300 hover:scale-[1.02]",
+        "module-card w-full text-left opacity-0 animate-fade-in transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]",
         `module-card-${variant}`,
         className
       )}
       style={{ animationDelay: `${delay}ms` }}
     >
-      <div className="flex items-start gap-4">
-        {/* Container do Ícone com as melhorias da imagem */}
-        <div className="p-3 rounded-xl bg-white/25 backdrop-blur-sm shadow-inner flex-shrink-0">
-          <Icon className="h-6 w-6 drop-shadow-sm" />
+      <div className="flex items-center gap-4">
+        {/* Ícone com fundo translúcido */}
+        <div className="p-3 rounded-xl bg-white/20 backdrop-blur-sm flex-shrink-0">
+          <Icon className="h-6 w-6 text-white drop-shadow-md" />
         </div>
 
-        {/* Textos com as melhorias de espaçamento e sombra */}
+        {/* Textos */}
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-lg leading-tight drop-shadow-sm">
+          <h3 className="font-bold text-lg leading-tight text-white drop-shadow-md">
             {title}
           </h3>
-          <p className="text-sm opacity-90 mt-1 line-clamp-2">
+          <p className="text-sm text-white/90 mt-0.5 line-clamp-1">
             {description}
           </p>
         </div>
+
+        {/* Seta indicadora */}
+        <ChevronRight className="h-5 w-5 text-white/70 flex-shrink-0" />
       </div>
     </button>
   );
-  }
+}
