@@ -50,16 +50,27 @@ const LeituraCapitulo = () => {
   const book = books?.find(b => b.abbreviation.toLowerCase() === livro?.toLowerCase());
   const chapterNum = parseInt(capitulo || '1', 10);
 
-  // Fetch verses for the chapter
+  // Fetch verses for the chapter (default to NVI version)
   const { data: verses, isLoading: versesLoading } = useQuery({
     queryKey: ['verses', book?.id, chapterNum],
     queryFn: async () => {
       if (!book) return [];
+      
+      // First get the NVI version id
+      const { data: versionData } = await supabase
+        .from('bible_versions')
+        .select('id')
+        .eq('code', 'NVI')
+        .single();
+      
+      if (!versionData) return [];
+      
       const { data, error } = await supabase
         .from('bible_verses')
         .select('id, verse, text')
         .eq('book_id', book.id)
         .eq('chapter', chapterNum)
+        .eq('version_id', versionData.id)
         .order('verse');
       
       if (error) throw error;
