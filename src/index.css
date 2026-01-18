@@ -210,57 +210,57 @@
   }
 
   .module-card-bible {
-    background: linear-gradient(135deg, hsl(221 83% 53%) 0%, hsl(235 82% 65%) 100%);
-    @apply text-white;
-    box-shadow: 0 4px 20px -4px hsl(221 83% 53% / 0.4);
-  }
-
-  .module-card-harpa {
-    background: linear-gradient(135deg, hsl(280 65% 60%) 0%, hsl(295 70% 65%) 100%);
-    @apply text-white;
-    box-shadow: 0 4px 20px -4px hsl(280 65% 60% / 0.4);
-  }
-
-  .module-card-agenda {
-    background: linear-gradient(135deg, hsl(160 84% 39%) 0%, hsl(175 70% 45%) 100%);
-    @apply text-white;
-    box-shadow: 0 4px 20px -4px hsl(160 84% 39% / 0.4);
-  }
-
-  .module-card-devocional {
-    background: linear-gradient(135deg, hsl(24 95% 53%) 0%, hsl(38 95% 55%) 100%);
-    @apply text-white;
-    box-shadow: 0 4px 20px -4px hsl(24 95% 53% / 0.4);
-  }
-
-  .module-card-ofertas {
-    background: linear-gradient(135deg, hsl(340 82% 52%) 0%, hsl(355 85% 58%) 100%);
-    @apply text-white;
-    box-shadow: 0 4px 20px -4px hsl(340 82% 52% / 0.4);
-  }
-
-  .module-card-videos {
-    background: linear-gradient(135deg, hsl(346 77% 49%) 0%, hsl(360 80% 55%) 100%);
-    @apply text-white;
-    box-shadow: 0 4px 20px -4px hsl(346 77% 49% / 0.4);
-  }
-
-  .module-card-lideranca {
-    background: linear-gradient(135deg, hsl(199 89% 48%) 0%, hsl(210 85% 55%) 100%);
-    @apply text-white;
-    box-shadow: 0 4px 20px -4px hsl(199 89% 48% / 0.4);
-  }
-
-  .module-card-convertidos {
-    background: linear-gradient(135deg, hsl(152 69% 40%) 0%, hsl(165 65% 45%) 100%);
-    @apply text-white;
-    box-shadow: 0 4px 20px -4px hsl(152 69% 40% / 0.4);
+    background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%) !important;
+    color: white !important;
+    box-shadow: 0 4px 20px -4px rgba(59, 130, 246, 0.5);
   }
 
   .module-card-planos {
-    background: linear-gradient(135deg, hsl(258 90% 66%) 0%, hsl(275 85% 65%) 100%);
-    @apply text-white;
-    box-shadow: 0 4px 20px -4px hsl(258 90% 66% / 0.4);
+    background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%) !important;
+    color: white !important;
+    box-shadow: 0 4px 20px -4px rgba(139, 92, 246, 0.5);
+  }
+
+  .module-card-harpa {
+    background: linear-gradient(135deg, #a855f7 0%, #d946ef 100%) !important;
+    color: white !important;
+    box-shadow: 0 4px 20px -4px rgba(168, 85, 247, 0.5);
+  }
+
+  .module-card-agenda {
+    background: linear-gradient(135deg, #10b981 0%, #14b8a6 100%) !important;
+    color: white !important;
+    box-shadow: 0 4px 20px -4px rgba(16, 185, 129, 0.5);
+  }
+
+  .module-card-devocional {
+    background: linear-gradient(135deg, #f97316 0%, #facc15 100%) !important;
+    color: white !important;
+    box-shadow: 0 4px 20px -4px rgba(249, 115, 22, 0.5);
+  }
+
+  .module-card-ofertas {
+    background: linear-gradient(135deg, #ec4899 0%, #f43f5e 100%) !important;
+    color: white !important;
+    box-shadow: 0 4px 20px -4px rgba(236, 72, 153, 0.5);
+  }
+
+  .module-card-videos {
+    background: linear-gradient(135deg, #ef4444 0%, #f97316 100%) !important;
+    color: white !important;
+    box-shadow: 0 4px 20px -4px rgba(239, 68, 68, 0.5);
+  }
+
+  .module-card-lideranca {
+    background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%) !important;
+    color: white !important;
+    box-shadow: 0 4px 20px -4px rgba(14, 165, 233, 0.5);
+  }
+
+  .module-card-convertidos {
+    background: linear-gradient(135deg, #22c55e 0%, #10b981 100%) !important;
+    color: white !important;
+    box-shadow: 0 4px 20px -4px rgba(34, 197, 94, 0.5);
   }
 
   /* Glass Effect */
