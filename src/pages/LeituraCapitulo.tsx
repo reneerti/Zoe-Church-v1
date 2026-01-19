@@ -76,7 +76,6 @@ const LeituraCapitulo = () => {
     queryFn: async () => {
       if (!book) return [];
       
-      // First get the version id
       const { data: versionData, error: versionError } = await supabase
         .from('bible_versions')
         .select('id')
@@ -123,7 +122,6 @@ const LeituraCapitulo = () => {
     enabled: !!user && !!verses && verses.length > 0,
   });
 
-  // Mutation to add/update highlight
   const highlightMutation = useMutation({
     mutationFn: async ({ verseIds, color }: { verseIds: string[]; color: string }) => {
       if (!user) throw new Error('Not authenticated');
@@ -154,7 +152,6 @@ const LeituraCapitulo = () => {
     },
   });
 
-  // Mutation to remove highlight
   const removeHighlightMutation = useMutation({
     mutationFn: async (verseIds: string[]) => {
       if (!user) throw new Error('Not authenticated');
@@ -175,7 +172,6 @@ const LeituraCapitulo = () => {
     },
   });
 
-  // Mark chapter as read
   const markAsReadMutation = useMutation({
     mutationFn: async () => {
       if (!user || !book) throw new Error('Not authenticated');
@@ -286,7 +282,6 @@ const LeituraCapitulo = () => {
 
   return (
     <div className="min-h-screen bg-background pb-32">
-      {/* Header Profissional */}
       <header className="sticky top-0 z-10 bg-background/95 backdrop-blur-lg border-b border-border/50">
         <div className="px-4 py-3">
           <div className="flex items-center justify-between">
@@ -308,7 +303,6 @@ const LeituraCapitulo = () => {
             </div>
 
             <div className="flex items-center gap-1">
-              {/* Version Selector */}
               <Select value={selectedVersion} onValueChange={setSelectedVersion}>
                 <SelectTrigger className="w-16 h-8 text-xs font-medium border-0 bg-muted/50">
                   <SelectValue />
@@ -326,7 +320,6 @@ const LeituraCapitulo = () => {
                 <Share2 className="h-4 w-4" />
               </Button>
 
-              {/* Settings Sheet */}
               <Sheet>
                 <SheetTrigger asChild>
                   <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -373,7 +366,6 @@ const LeituraCapitulo = () => {
             </div>
           </div>
 
-          {/* Chapter Navigation */}
           <div className="flex items-center justify-center gap-4 mt-2">
             <Button
               variant="ghost"
@@ -402,7 +394,6 @@ const LeituraCapitulo = () => {
         </div>
       </header>
 
-      {/* Verses Content */}
       <div className="p-4 max-w-2xl mx-auto">
         {versesLoading ? (
           <div className="space-y-4">
@@ -461,7 +452,6 @@ const LeituraCapitulo = () => {
         )}
       </div>
 
-      {/* Selection Actions Bar */}
       {selectionMode && selectedVerses.length > 0 && (
         <div className="fixed bottom-20 left-0 right-0 p-4 bg-background/95 backdrop-blur-lg border-t">
           <div className="flex items-center justify-between max-w-2xl mx-auto">
@@ -490,8 +480,8 @@ const LeituraCapitulo = () => {
                         className={`w-10 h-10 rounded-full ${color.bg} hover:scale-110 transition-transform ring-2 ring-transparent hover:ring-primary/30 hover:ring-offset-2`}
                         title={color.name}
                       />
-                    ))
-                  }</n                  </div>
+                    ))}
+                  </div>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -517,7 +507,6 @@ const LeituraCapitulo = () => {
         </div>
       )}
 
-      {/* Mark as Read Button */}
       {!selectionMode && user && verses && verses.length > 0 && (
         <div className="fixed bottom-20 left-0 right-0 p-4 bg-gradient-to-t from-background via-background to-transparent">
           <div className="max-w-2xl mx-auto">
