@@ -244,11 +244,8 @@ export default function Biblia() {
                       return (
                         <button
                           key={book.id}
-                          onClick={() =>
-                            navigate(`/biblia/${book.name.toLowerCase().replace(/\s/g, "-")}`, {
-                              state: { bookId: book.id, bookName: book.name, chaptersCount: book.chapters_count },
-                            })
-                          }
+                          onClick={() => navigate(`/biblia/${book.abbreviation.toLowerCase()}`)}
+                        
                           className={cn(
                             "p-3 rounded-xl text-left transition-all duration-300",
                             "border-2 hover:shadow-md active:scale-[0.98]",
