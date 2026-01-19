@@ -1,20 +1,9 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate, useSearchParams } from "react-router-dom";
-import {
-  ArrowLeft,
-  ChevronLeft,
-  ChevronRight,
-  Highlighter,
-  Check,
-  BookOpen,
-  Share2,
-  Settings2,
-  Copy,
-  Info,
-} from "lucide-react";
+import { useParams, useNavigate } from "react-router-dom";
+import { ArrowLeft, ChevronLeft, ChevronRight, Share2, Settings2, Check, BookOpen, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BottomNav } from "@/components/layout/BottomNav";
-import PageContainer from "@/components/layout/PageContainer";
+import { PageContainer } from "@/components/layout/PageContainer"; // Ajustado para named export
 import { useBibleData } from "@/hooks/useBibleData";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
@@ -25,21 +14,17 @@ import { Slider } from "@/components/ui/slider";
 const LeituraCapitulo = () => {
   const { livroId, capitulo } = useParams();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const { versiculos, loading, livroNome, proximoCapitulo, capituloAnterior } = useBibleData(livroId, Number(capitulo));
 
-  // Estados para funcionalidades avançadas
   const [fontSize, setFontSize] = useState(18);
   const [selectedVerses, setSelectedVerses] = useState<number[]>([]);
   const [isRead, setIsRead] = useState(false);
   const [fontFamily, setFontFamily] = useState<"serif" | "sans">("serif");
 
-  // Carregar progresso e preferências
   useEffect(() => {
     const savedFontSize = localStorage.getItem("zoe-bible-font-size");
     if (savedFontSize) setFontSize(Number(savedFontSize));
 
-    // Simulação de verificação de capítulo lido
     const checkReadStatus = async () => {
       const {
         data: { user },
@@ -64,7 +49,7 @@ const LeituraCapitulo = () => {
 
   const handleShare = async () => {
     if (selectedVerses.length === 0) {
-      toast.info("Selecione versículos para compartilhar");
+      toast.info("Toque nos versículos para selecionar");
       return;
     }
     const textToShare = versiculos
@@ -72,13 +57,13 @@ const LeituraCapitulo = () => {
       .map((v) => `${v.versiculo}. ${v.texto}`)
       .join("\n");
 
-    const finalMsg = `*${livroNome} ${capitulo}*\n\n${textToShare}\n\n_Lido no Zoe Church App_`;
+    const finalMsg = `*${livroNome} ${capitulo}*\n\n${textToShare}\n\n_Lido no Zoe App_`;
 
     if (navigator.share) {
       await navigator.share({ title: "Bíblia Zoe", text: finalMsg });
     } else {
       navigator.clipboard.writeText(finalMsg);
-      toast.success("Copiado para a área de transferência!");
+      toast.success("Copiado!");
     }
     setSelectedVerses([]);
   };
@@ -98,23 +83,23 @@ const LeituraCapitulo = () => {
 
     if (!error) {
       setIsRead(true);
-      toast.success("Capítulo concluído! +10 pontos de fé.");
+      toast.success("Capítulo lido!");
     }
   };
 
   return (
     <PageContainer>
       <div className="flex flex-col min-h-screen pb-32">
-        {/* Header Fixo com Ações */}
-        <header className="sticky top-0 z-50 w-full bg-background/80 backdrop-blur-md border-b">
+        {/* Header */}
+        <header className="sticky top-0 z-50 w-full bg-background/95 backdrop-blur-sm border-b">
           <div className="flex items-center justify-between p-4">
             <div className="flex items-center gap-3">
               <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="rounded-full">
                 <ArrowLeft className="h-6 w-6" />
               </Button>
               <div>
-                <h1 className="text-lg font-bold leading-none">{livroNome}</h1>
-                <p className="text-xs text-muted-foreground font-medium">Capítulo {capitulo}</p>
+                <h1 className="text-lg font-bold leading-none">{livroNome || "Carregando..."}</h1>
+                <p className="text-xs text-muted-foreground">Capítulo {capitulo}</p>
               </div>
             </div>
 
@@ -127,21 +112,12 @@ const LeituraCapitulo = () => {
                 </DrawerTrigger>
                 <DrawerContent>
                   <DrawerHeader>
-                    <DrawerTitle>Configurações de Leitura</DrawerTitle>
+                    <DrawerTitle>Configurações</DrawerTitle>
                   </DrawerHeader>
                   <div className="p-6 space-y-6">
                     <div className="space-y-4">
                       <label className="text-sm font-medium">Tamanho da Fonte: {fontSize}px</label>
-                      <Slider
-                        value={[fontSize]}
-                        min={14}
-                        max={32}
-                        step={1}
-                        onValueChange={(val) => {
-                          setFontSize(val[0]);
-                          localStorage.setItem("zoe-bible-font-size", val[0].toString());
-                        }}
-                      />
+                      <Slider value={[fontSize]} min={14} max={30} step={1} onValueChange={(v) => setFontSize(v[0])} />
                     </div>
                     <div className="flex gap-4">
                       <Button
@@ -149,14 +125,14 @@ const LeituraCapitulo = () => {
                         className="flex-1"
                         onClick={() => setFontFamily("serif")}
                       >
-                        Serifada
+                        Serifa
                       </Button>
                       <Button
                         variant={fontFamily === "sans" ? "default" : "outline"}
                         className="flex-1"
                         onClick={() => setFontFamily("sans")}
                       >
-                        Moderna
+                        Sem Serifa
                       </Button>
                     </div>
                   </div>
@@ -169,90 +145,75 @@ const LeituraCapitulo = () => {
           </div>
         </header>
 
-        {/* Área de Leitura Sequencial */}
-        <main className="flex-1 px-5 pt-6 max-w-3xl mx-auto w-full">
+        {/* Texto Sequencial */}
+        <main className="flex-1 px-5 pt-6 max-w-2xl mx-auto w-full">
           {loading ? (
             <div className="space-y-4">
               <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-5/6" />
               <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-4/6" />
+              <Skeleton className="h-4 w-3/4" />
             </div>
           ) : (
-            <article
-              className={`
-                ${fontFamily === "serif" ? "font-serif" : "font-sans"} 
-                leading-relaxed text-justify select-none
-              `}
+            <div
+              className={`${fontFamily === "serif" ? "font-serif" : "font-sans"} leading-relaxed text-justify`}
               style={{ fontSize: `${fontSize}px` }}
             >
               {versiculos?.map((v) => (
                 <span
                   key={v.id}
                   onClick={() => handleToggleVerse(v.versiculo)}
-                  className={`
-                    inline transition-all duration-200 cursor-pointer rounded-sm px-0.5
-                    ${selectedVerses.includes(v.versiculo) ? "bg-primary/30" : "hover:bg-primary/5"}
-                  `}
+                  className={`inline transition-colors cursor-pointer rounded px-0.5 ${selectedVerses.includes(v.versiculo) ? "bg-primary/20 ring-1 ring-primary/30" : "hover:bg-primary/5"}`}
                 >
-                  <sup className="font-bold text-primary mr-1 text-[0.6em] opacity-80 select-none">{v.versiculo}</sup>
+                  <sup className="font-bold text-primary mr-1 text-[0.6em] select-none">{v.versiculo}</sup>
                   <span className="text-foreground mr-1.5">{v.texto}</span>
                 </span>
               ))}
-            </article>
+            </div>
           )}
 
-          {/* Ações de Fim de Capítulo */}
+          {/* Navegação e Progresso */}
           {!loading && (
-            <div className="mt-12 flex flex-col items-center gap-6 pb-10">
+            <div className="mt-12 space-y-8">
               <Button
                 variant={isRead ? "secondary" : "default"}
-                className="w-full max-w-xs rounded-full py-6 text-base shadow-lg"
+                className="w-full rounded-full py-6"
                 onClick={markAsRead}
                 disabled={isRead}
               >
                 {isRead ? (
                   <>
-                    <Check className="mr-2 h-5 w-5" /> Concluído
+                    <Check className="mr-2 h-5 w-5" /> Lido
                   </>
                 ) : (
                   "Marcar como lido"
                 )}
               </Button>
 
-              <div className="flex justify-between w-full border-t pt-8">
+              <div className="flex justify-between items-center border-t pt-6">
                 <Button
                   variant="ghost"
                   disabled={!capituloAnterior}
                   onClick={() => navigate(`/biblia/${livroId}/${capituloAnterior}`)}
-                  className="flex flex-col h-auto py-2"
                 >
-                  <ChevronLeft className="h-5 w-5" />
-                  <span className="text-[10px] uppercase font-bold text-muted-foreground">Anterior</span>
+                  <ChevronLeft className="mr-2 h-4 w-4" /> Anterior
                 </Button>
-
-                <div className="h-10 w-[1px] bg-border self-center" />
-
                 <Button
                   variant="ghost"
                   disabled={!proximoCapitulo}
                   onClick={() => navigate(`/biblia/${livroId}/${proximoCapitulo}`)}
-                  className="flex flex-col h-auto py-2 text-primary"
                 >
-                  <ChevronRight className="h-5 w-5" />
-                  <span className="text-[10px] uppercase font-bold">Próximo</span>
+                  Próximo <ChevronRight className="ml-2 h-4 w-4" />
                 </Button>
               </div>
             </div>
           )}
         </main>
 
-        {/* Rodapé Zoe */}
-        <div className="px-5 mb-4">
-          <div className="bg-primary/5 p-4 rounded-2xl border border-primary/10 flex items-start gap-3">
+        <div className="px-5 mt-8 mb-10">
+          <div className="bg-muted p-4 rounded-xl flex gap-3 items-start">
             <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-            <p className="text-xs text-muted-foreground leading-tight">
-              Toque nos versículos para selecionar e compartilhar ou destacar passagens importantes.
+            <p className="text-xs text-muted-foreground">
+              Toque nos versículos para selecionar, copiar ou compartilhar passagens.
             </p>
           </div>
         </div>
