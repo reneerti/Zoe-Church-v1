@@ -7,13 +7,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const LivroCapitulos = () => {
-  const { livro } = useParams<{ livro: string }>();
+  const { bookId } = useParams<{ bookId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { data: books, isLoading: booksLoading } = useBibleBooks();
   const { data: readingProgress } = useReadingProgress(user?.id);
 
-  const book = books?.find(b => b.abbreviation.toLowerCase() === livro?.toLowerCase());
+  const book = books?.find(b => b.abbreviation.toLowerCase() === bookId?.toLowerCase());
 
   if (booksLoading) {
     return (
@@ -39,7 +39,7 @@ const LivroCapitulos = () => {
         <div className="text-center">
           <BookOpen className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
           <p className="text-muted-foreground">Livro não encontrado</p>
-          <p className="text-sm text-muted-foreground mt-1">Parâmetro: {livro}</p>
+          <p className="text-sm text-muted-foreground mt-1">Parâmetro: {bookId}</p>
           <Button variant="link" onClick={() => navigate('/biblia')}>
             Voltar à Bíblia
           </Button>
@@ -66,9 +66,9 @@ const LivroCapitulos = () => {
       case 1:
         return 'bg-primary/20 hover:bg-primary/30 text-primary-foreground border-primary/30';
       case 2:
-        return 'bg-primary/40 hover:bg-primary/50 text-white border-primary/50';
+        return 'bg-primary/40 hover:bg-primary/50 text-primary-foreground border-primary/50';
       case 3:
-        return 'bg-primary/70 hover:bg-primary/80 text-white border-primary/70';
+        return 'bg-primary/70 hover:bg-primary/80 text-primary-foreground border-primary/70';
       case 4:
         return 'bg-primary hover:bg-primary/90 text-primary-foreground border-primary';
       default:
