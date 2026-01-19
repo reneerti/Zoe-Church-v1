@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, ChevronLeft, ChevronRight, Highlighter, Check, BookOpen, Share2, Settings2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { BottomNav } from '@/components/layout/BottomNav';
@@ -48,7 +48,8 @@ interface Highlight {
 }
 
 const LeituraCapitulo = () => {
-  const { livro, capitulo } = useParams<{ livro: string; capitulo: string }>();
+  const { bookId, chapter } = useParams<{ bookId: string; chapter: string }>();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -62,9 +63,12 @@ const LeituraCapitulo = () => {
   const [fontSize, setFontSize] = useState(18);
   const [lineHeight, setLineHeight] = useState(1.8);
   const [showVerseNumbers, setShowVerseNumbers] = useState(true);
+  const [highlightedVerse, setHighlightedVerse] = useState<number | null>(null);
 
-  const book = books?.find(b => b.abbreviation.toLowerCase() === livro?.toLowerCase());
-  const chapterNum = parseInt(capitulo || '1', 10);
+  const book = books?.find(b => b.abbreviation.toLowerCase() === bookId?.toLowerCase());
+  const chapterNum = parseInt(chapter || '1', 10);
+  const verseParam = searchParams.get('v');
+  const verseToScroll = verseParam ? parseInt(verseParam.split('-')[0], 10) : null;
 
   // Fetch verses for the chapter
   const { data: verses, isLoading: versesLoading, error: versesError } = useQuery({
@@ -239,7 +243,7 @@ const LeituraCapitulo = () => {
     if (!book) return;
     const newChapter = direction === 'next' ? chapterNum + 1 : chapterNum - 1;
     if (newChapter >= 1 && newChapter <= book.chapters_count) {
-      navigate(`/biblia/${livro}/${newChapter}`);
+      navigate(`/biblia/${bookId}/${newChapter}`);
       setSelectedVerses([]);
       setSelectionMode(false);
     }
@@ -290,7 +294,7 @@ const LeituraCapitulo = () => {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => navigate(`/biblia/${livro}`)}
+                onClick={() => navigate(`/biblia/${bookId}`)}
                 className="rounded-full"
               >
                 <ArrowLeft className="h-5 w-5" />
@@ -411,30 +415,33 @@ const LeituraCapitulo = () => {
             <p className="text-destructive">Erro ao carregar versículos</p>
           </div>
         ) : verses && verses.length > 0 ? (
-          <div 
-            className="prose prose-lg dark:prose-invert max-w-none"
+          <div
+            className="space-y-2 text-foreground"
             style={{ fontSize: `${fontSize}px`, lineHeight: lineHeight }}
           >
             {verses.map((verse) => {
               const highlight = getHighlightColor(verse.id);
               const isSelected = selectedVerses.includes(verse.id);
-              
+              const isTarget = highlightedVerse === verse.verse;
+
               return (
-                <span
+                <p
                   key={verse.id}
+                  id={`verse-${verse.verse}`}
                   onClick={() => toggleVerseSelection(verse.id)}
-                  className={`
-                    inline cursor-pointer transition-all duration-200 rounded
-                    ${highlight ? `${highlight.bg} ${highlight.text} px-1 py-0.5` : ''}
-                    ${isSelected ? 'bg-primary/20 ring-2 ring-primary px-1 py-0.5' : ''}
-                    ${!highlight && !isSelected ? 'hover:bg-muted/50' : ''}
-                  `}
+                  className={
+                    `rounded-lg px-2 py-1 transition-colors cursor-pointer ` +
+                    `${highlight ? `${highlight.bg} ${highlight.text}` : ''} ` +
+                    `${isSelected ? 'bg-primary/20 ring-2 ring-primary' : ''} ` +
+                    `${!highlight && !isSelected ? 'hover:bg-muted/50' : ''} ` +
+                    `${isTarget ? 'ring-2 ring-primary/60 bg-primary/10' : ''}`
+                  }
                 >
                   {showVerseNumbers && (
-                    <sup className="text-xs text-primary font-bold mr-1 select-none">{verse.verse}</sup>
+                    <sup className="text-xs text-primary font-bold mr-2 select-none">{verse.verse}</sup>
                   )}
-                  {verse.text}{' '}
-                </span>
+                  <span className="tracking-[0.01em]">{verse.text}</span>
+                </p>
               );
             })}
           </div>
@@ -480,11 +487,11 @@ const LeituraCapitulo = () => {
                       <button
                         key={color.value}
                         onClick={() => highlightMutation.mutate({ verseIds: selectedVerses, color: color.value })}
-                        className={`w-10 h-10 rounded-full ${color.bg} hover:scale-110 transition-transform ring-2 ring-transparent hover:ring-offset-2 hover:ring-${color.value}-400`}
+                        className={`w-10 h-10 rounded-full ${color.bg} hover:scale-110 transition-transform ring-2 ring-transparent hover:ring-primary/30 hover:ring-offset-2`}
                         title={color.name}
                       />
-                    ))}
-                  </div>
+                    ))
+                  }</n                  </div>
                   <Button
                     variant="ghost"
                     size="sm"

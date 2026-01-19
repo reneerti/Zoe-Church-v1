@@ -138,7 +138,7 @@ export default function BuscaBiblia() {
   const navegarParaVersiculo = (resultado: ResultadoBusca) => {
     const livro = livros?.find(l => l.abbreviation === resultado.livro_abrev);
     if (livro) {
-      navigate(`/biblia/${livro.id}/${resultado.capitulo}`);
+      navigate(`/biblia/${livro.abbreviation.toLowerCase()}/${resultado.capitulo}?v=${resultado.versiculo}`);
     }
   };
   
@@ -164,7 +164,13 @@ export default function BuscaBiblia() {
             <Input
               value={termo}
               onChange={(e) => setTermo(e.target.value)}
-              placeholder="Buscar na Bíblia..."
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  const ref = tentarIrParaReferencia();
+                  if (ref) e.preventDefault();
+                }
+              }}
+              placeholder="Buscar na Bíblia ou digite uma referência (ex: João 3:16)"
               className="pl-9 pr-9"
               autoFocus
             />
