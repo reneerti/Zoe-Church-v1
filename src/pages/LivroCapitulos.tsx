@@ -41,9 +41,8 @@ const LeituraCapitulo = () => {
 
   const livro = books?.find((b) => b.id === livroId);
 
-  // --- CORREÇÃO DA NAVEGAÇÃO ---
+  // --- LÓGICA DE NAVEGAÇÃO CORRIGIDA ---
   const numCapitulo = Number(capitulo);
-  // Assume-se que capítulos começam em 1. O chapters_count vem do hook useBibleData.
   const capituloAnterior = numCapitulo > 1 ? numCapitulo - 1 : null;
   const proximoCapitulo = livro && numCapitulo < (livro.chapters_count || 0) ? numCapitulo + 1 : null;
 
@@ -214,7 +213,7 @@ const LeituraCapitulo = () => {
         </div>
       </div>
 
-      {/* --- VISUALIZAÇÃO SEQUENCIAL (A MELHORIA) --- */}
+      {/* --- MELHORIA: VISUALIZAÇÃO SEQUENCIAL (TEXTO CORRIDO) --- */}
       <div className="flex-1 max-w-2xl mx-auto w-full p-6">
         {loadingVerses ? (
           <div className="space-y-4">
@@ -254,8 +253,8 @@ const LeituraCapitulo = () => {
         )}
       </div>
 
-      {/* Botões de Navegação */}
-      <div className="max-w-2xl mx-auto px-6 py-10 flex justify-between items-center border-t mt-10 mb-20 w-full">
+      {/* --- NAVEGAÇÃO ENTRE CAPÍTULOS --- */}
+      <div className="max-w-2xl mx-auto px-6 py-10 flex justify-between items-center border-t mt-10 mb-20 w-full text-center">
         <Button
           variant="ghost"
           disabled={!capituloAnterior}
@@ -326,7 +325,8 @@ const LeituraCapitulo = () => {
         </div>
       )}
 
-      {!selectionMode && verses && verses.length > 0 && (
+      {/* Botão Marcar como Lido */}
+      {!selectionMode && user && verses && verses.length > 0 && (
         <div className="fixed bottom-20 left-0 right-0 p-4 bg-gradient-to-t from-background via-background/80 to-transparent">
           <div className="max-w-2xl mx-auto">
             <Button
