@@ -1,530 +1,264 @@
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, ChevronLeft, ChevronRight, Highlighter, Check, BookOpen, Share2, Settings2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { BottomNav } from '@/components/layout/BottomNav';
-import { useBibleBooks, useBibleVersions } from '@/hooks/useBibleData';
-import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useToast } from '@/hooks/use-toast';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useState, useEffect } from "react";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/ui/sheet';
-import { Slider } from '@/components/ui/slider';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-
-const HIGHLIGHT_COLORS = [
-  { name: 'Amarelo', value: 'yellow', bg: 'bg-yellow-200', text: 'text-yellow-900' },
-  { name: 'Verde', value: 'green', bg: 'bg-green-200', text: 'text-green-900' },
-  { name: 'Azul', value: 'blue', bg: 'bg-blue-200', text: 'text-blue-900' },
-  { name: 'Rosa', value: 'pink', bg: 'bg-pink-200', text: 'text-pink-900' },
-  { name: 'Roxo', value: 'purple', bg: 'bg-purple-200', text: 'text-purple-900' },
-];
-
-interface Verse {
-  id: string;
-  verse: number;
-  text: string;
-}
-
-interface Highlight {
-  id: string;
-  verse_id: string;
-  color: string;
-  note: string | null;
-}
+  ArrowLeft,
+  ChevronLeft,
+  ChevronRight,
+  Highlighter,
+  Check,
+  BookOpen,
+  Share2,
+  Settings2,
+  Copy,
+  Info,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { BottomNav } from "@/components/layout/BottomNav";
+import PageContainer from "@/components/layout/PageContainer";
+import { useBibleData } from "@/hooks/useBibleData";
+import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
+import { Slider } from "@/components/ui/slider";
 
 const LeituraCapitulo = () => {
-  const { bookId, chapter } = useParams<{ bookId: string; chapter: string }>();
-  const [searchParams] = useSearchParams();
+  const { livroId, capitulo } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const { data: books } = useBibleBooks();
-  const { data: versions } = useBibleVersions();
-  
-  const [selectedVerses, setSelectedVerses] = useState<string[]>([]);
-  const [selectionMode, setSelectionMode] = useState(false);
-  const [selectedVersion, setSelectedVersion] = useState('NVI');
+  const [searchParams] = useSearchParams();
+  const { versiculos, loading, livroNome, proximoCapitulo, capituloAnterior } = useBibleData(livroId, Number(capitulo));
+
+  // Estados para funcionalidades avançadas
   const [fontSize, setFontSize] = useState(18);
-  const [lineHeight, setLineHeight] = useState(1.8);
-  const [showVerseNumbers, setShowVerseNumbers] = useState(true);
-  const [highlightedVerse, setHighlightedVerse] = useState<number | null>(null);
+  const [selectedVerses, setSelectedVerses] = useState<number[]>([]);
+  const [isRead, setIsRead] = useState(false);
+  const [fontFamily, setFontFamily] = useState<"serif" | "sans">("serif");
 
-  const book = books?.find(b => b.abbreviation.toLowerCase() === bookId?.toLowerCase());
-  const chapterNum = parseInt(chapter || '1', 10);
-  const verseParam = searchParams.get('v');
-  const verseToScroll = verseParam ? parseInt(verseParam.split('-')[0], 10) : null;
+  // Carregar progresso e preferências
+  useEffect(() => {
+    const savedFontSize = localStorage.getItem("zoe-bible-font-size");
+    if (savedFontSize) setFontSize(Number(savedFontSize));
 
-  // Fetch verses for the chapter
-  const { data: verses, isLoading: versesLoading, error: versesError } = useQuery({
-    queryKey: ['verses', book?.id, chapterNum, selectedVersion],
-    queryFn: async () => {
-      if (!book) return [];
-      
-      const { data: versionData, error: versionError } = await supabase
-        .from('bible_versions')
-        .select('id')
-        .eq('code', selectedVersion)
-        .maybeSingle();
-      
-      if (versionError || !versionData) {
-        console.error('Version not found:', selectedVersion);
-        return [];
+    // Simulação de verificação de capítulo lido
+    const checkReadStatus = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user) {
+        const { data } = await supabase
+          .from("user_progress")
+          .select("*")
+          .eq("user_id", user.id)
+          .eq("book_id", livroId)
+          .eq("chapter", capitulo)
+          .single();
+        if (data) setIsRead(true);
       }
-      
-      const { data, error } = await supabase
-        .from('bible_verses')
-        .select('id, verse, text')
-        .eq('book_id', book.id)
-        .eq('chapter', chapterNum)
-        .eq('version_id', versionData.id)
-        .order('verse');
-      
-      if (error) {
-        console.error('Error fetching verses:', error);
-        throw error;
-      }
-      return data as Verse[];
-    },
-    enabled: !!book,
-  });
+    };
+    checkReadStatus();
+  }, [livroId, capitulo]);
 
-  // Fetch user highlights for this chapter
-  const { data: highlights } = useQuery({
-    queryKey: ['highlights', book?.id, chapterNum, user?.id],
-    queryFn: async () => {
-      if (!user || !verses) return [];
-      const verseIds = verses.map(v => v.id);
-      const { data, error } = await supabase
-        .from('verse_highlights')
-        .select('id, verse_id, color, note')
-        .eq('user_id', user.id)
-        .in('verse_id', verseIds);
-      
-      if (error) throw error;
-      return data as Highlight[];
-    },
-    enabled: !!user && !!verses && verses.length > 0,
-  });
-
-  const highlightMutation = useMutation({
-    mutationFn: async ({ verseIds, color }: { verseIds: string[]; color: string }) => {
-      if (!user) throw new Error('Not authenticated');
-      
-      await supabase
-        .from('verse_highlights')
-        .delete()
-        .eq('user_id', user.id)
-        .in('verse_id', verseIds);
-
-      const inserts = verseIds.map(verse_id => ({
-        user_id: user.id,
-        verse_id,
-        color,
-      }));
-
-      const { error } = await supabase
-        .from('verse_highlights')
-        .insert(inserts);
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['highlights'] });
-      setSelectedVerses([]);
-      setSelectionMode(false);
-      toast({ title: 'Destaque adicionado!' });
-    },
-  });
-
-  const removeHighlightMutation = useMutation({
-    mutationFn: async (verseIds: string[]) => {
-      if (!user) throw new Error('Not authenticated');
-      
-      const { error } = await supabase
-        .from('verse_highlights')
-        .delete()
-        .eq('user_id', user.id)
-        .in('verse_id', verseIds);
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['highlights'] });
-      setSelectedVerses([]);
-      setSelectionMode(false);
-      toast({ title: 'Destaque removido!' });
-    },
-  });
-
-  const markAsReadMutation = useMutation({
-    mutationFn: async () => {
-      if (!user || !book) throw new Error('Not authenticated');
-      
-      const { data: existing } = await supabase
-        .from('reading_progress')
-        .select('id, read_count')
-        .eq('user_id', user.id)
-        .eq('book_id', book.id)
-        .eq('chapter', chapterNum)
-        .maybeSingle();
-
-      if (existing) {
-        await supabase
-          .from('reading_progress')
-          .update({ 
-            read_count: existing.read_count + 1,
-            last_read_at: new Date().toISOString()
-          })
-          .eq('id', existing.id);
-      } else {
-        await supabase
-          .from('reading_progress')
-          .insert({
-            user_id: user.id,
-            book_id: book.id,
-            chapter: chapterNum,
-            read_count: 1,
-          });
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['readingProgress'] });
-      toast({ 
-        title: 'Capítulo marcado como lido!',
-        description: 'Seu progresso foi atualizado.'
-      });
-    },
-  });
-
-  const toggleVerseSelection = (verseId: string) => {
-    if (!user) {
-      toast({
-        variant: 'destructive',
-        title: 'Faça login',
-        description: 'Entre na sua conta para destacar versículos.',
-      });
-      return;
-    }
-    
-    setSelectionMode(true);
-    setSelectedVerses(prev => 
-      prev.includes(verseId) 
-        ? prev.filter(id => id !== verseId)
-        : [...prev, verseId]
-    );
-  };
-
-  const getHighlightColor = (verseId: string) => {
-    const highlight = highlights?.find(h => h.verse_id === verseId);
-    return highlight ? HIGHLIGHT_COLORS.find(c => c.value === highlight.color) : null;
-  };
-
-  const navigateChapter = (direction: 'prev' | 'next') => {
-    if (!book) return;
-    const newChapter = direction === 'next' ? chapterNum + 1 : chapterNum - 1;
-    if (newChapter >= 1 && newChapter <= book.chapters_count) {
-      navigate(`/biblia/${bookId}/${newChapter}`);
-      setSelectedVerses([]);
-      setSelectionMode(false);
-    }
+  const handleToggleVerse = (num: number) => {
+    setSelectedVerses((prev) => (prev.includes(num) ? prev.filter((n) => n !== num) : [...prev, num]));
   };
 
   const handleShare = async () => {
-    if (!book || !verses) return;
-    
-    const selectedTexts = selectedVerses.length > 0
-      ? verses.filter(v => selectedVerses.includes(v.id))
-          .map(v => `${v.verse}. ${v.text}`)
-          .join('\n')
-      : '';
-    
-    const shareText = selectedTexts 
-      ? `${book.name} ${chapterNum}\n\n${selectedTexts}\n\n- ${selectedVersion}`
-      : `${book.name} ${chapterNum} - ${selectedVersion}`;
+    if (selectedVerses.length === 0) {
+      toast.info("Selecione versículos para compartilhar");
+      return;
+    }
+    const textToShare = versiculos
+      ?.filter((v) => selectedVerses.includes(v.versiculo))
+      .map((v) => `${v.versiculo}. ${v.texto}`)
+      .join("\n");
 
-    try {
-      await navigator.share({
-        title: `${book.name} ${chapterNum}`,
-        text: shareText,
-      });
-    } catch {
-      navigator.clipboard.writeText(shareText);
-      toast({ title: 'Texto copiado!' });
+    const finalMsg = `*${livroNome} ${capitulo}*\n\n${textToShare}\n\n_Lido no Zoe Church App_`;
+
+    if (navigator.share) {
+      await navigator.share({ title: "Bíblia Zoe", text: finalMsg });
+    } else {
+      navigator.clipboard.writeText(finalMsg);
+      toast.success("Copiado para a área de transferência!");
+    }
+    setSelectedVerses([]);
+  };
+
+  const markAsRead = async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { error } = await supabase.from("user_progress").upsert({
+      user_id: user.id,
+      book_id: livroId,
+      chapter: Number(capitulo),
+      completed_at: new Date().toISOString(),
+    });
+
+    if (!error) {
+      setIsRead(true);
+      toast.success("Capítulo concluído! +10 pontos de fé.");
     }
   };
 
-  if (!book) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <BookOpen className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-          <p className="text-muted-foreground">Carregando livro...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-background pb-32">
-      <header className="sticky top-0 z-10 bg-background/95 backdrop-blur-lg border-b border-border/50">
-        <div className="px-4 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => navigate(`/biblia/${bookId}`)}
-                className="rounded-full"
-              >
-                <ArrowLeft className="h-5 w-5" />
+    <PageContainer>
+      <div className="flex flex-col min-h-screen pb-32">
+        {/* Header Fixo com Ações */}
+        <header className="sticky top-0 z-50 w-full bg-background/80 backdrop-blur-md border-b">
+          <div className="flex items-center justify-between p-4">
+            <div className="flex items-center gap-3">
+              <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="rounded-full">
+                <ArrowLeft className="h-6 w-6" />
               </Button>
               <div>
-                <h1 className="font-bold text-lg">{book.name} {chapterNum}</h1>
-                <p className="text-xs text-muted-foreground">
-                  {book.testament === 'AT' ? 'Antigo' : 'Novo'} Testamento
-                </p>
+                <h1 className="text-lg font-bold leading-none">{livroNome}</h1>
+                <p className="text-xs text-muted-foreground font-medium">Capítulo {capitulo}</p>
               </div>
             </div>
 
             <div className="flex items-center gap-1">
-              <Select value={selectedVersion} onValueChange={setSelectedVersion}>
-                <SelectTrigger className="w-16 h-8 text-xs font-medium border-0 bg-muted/50">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {(versions || [{ id: '1', code: 'NVI', name: 'NVI' }, { id: '2', code: 'ARA', name: 'ARA' }, { id: '3', code: 'NTLH', name: 'NTLH' }]).map((v) => (
-                    <SelectItem key={v.code} value={v.code}>
-                      {v.code}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleShare}>
-                <Share2 className="h-4 w-4" />
-              </Button>
-
-              <Sheet>
-                <SheetTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                    <Settings2 className="h-4 w-4" />
+              <Drawer>
+                <DrawerTrigger asChild>
+                  <Button variant="ghost" size="icon">
+                    <Settings2 className="h-5 w-5" />
                   </Button>
-                </SheetTrigger>
-                <SheetContent side="bottom" className="rounded-t-3xl">
-                  <SheetHeader>
-                    <SheetTitle>Configurações de Leitura</SheetTitle>
-                  </SheetHeader>
-                  <div className="space-y-6 py-6">
-                    <div className="space-y-3">
-                      <Label className="text-sm font-medium">Tamanho da Fonte: {fontSize}px</Label>
+                </DrawerTrigger>
+                <DrawerContent>
+                  <DrawerHeader>
+                    <DrawerTitle>Configurações de Leitura</DrawerTitle>
+                  </DrawerHeader>
+                  <div className="p-6 space-y-6">
+                    <div className="space-y-4">
+                      <label className="text-sm font-medium">Tamanho da Fonte: {fontSize}px</label>
                       <Slider
                         value={[fontSize]}
-                        onValueChange={([v]) => setFontSize(v)}
                         min={14}
-                        max={28}
+                        max={32}
                         step={1}
-                        className="w-full"
+                        onValueChange={(val) => {
+                          setFontSize(val[0]);
+                          localStorage.setItem("zoe-bible-font-size", val[0].toString());
+                        }}
                       />
                     </div>
-                    <div className="space-y-3">
-                      <Label className="text-sm font-medium">Espaçamento: {lineHeight.toFixed(1)}</Label>
-                      <Slider
-                        value={[lineHeight * 10]}
-                        onValueChange={([v]) => setLineHeight(v / 10)}
-                        min={14}
-                        max={30}
-                        step={1}
-                        className="w-full"
-                      />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <Label className="text-sm font-medium">Números dos versículos</Label>
-                      <Switch
-                        checked={showVerseNumbers}
-                        onCheckedChange={setShowVerseNumbers}
-                      />
+                    <div className="flex gap-4">
+                      <Button
+                        variant={fontFamily === "serif" ? "default" : "outline"}
+                        className="flex-1"
+                        onClick={() => setFontFamily("serif")}
+                      >
+                        Serifada
+                      </Button>
+                      <Button
+                        variant={fontFamily === "sans" ? "default" : "outline"}
+                        className="flex-1"
+                        onClick={() => setFontFamily("sans")}
+                      >
+                        Moderna
+                      </Button>
                     </div>
                   </div>
-                </SheetContent>
-              </Sheet>
+                </DrawerContent>
+              </Drawer>
+              <Button variant="ghost" size="icon" onClick={handleShare} disabled={selectedVerses.length === 0}>
+                <Share2 className={`h-5 w-5 ${selectedVerses.length > 0 ? "text-primary" : ""}`} />
+              </Button>
             </div>
           </div>
+        </header>
 
-          <div className="flex items-center justify-center gap-4 mt-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              disabled={chapterNum <= 1}
-              onClick={() => navigateChapter('prev')}
-              className="text-muted-foreground"
+        {/* Área de Leitura Sequencial */}
+        <main className="flex-1 px-5 pt-6 max-w-3xl mx-auto w-full">
+          {loading ? (
+            <div className="space-y-4">
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-5/6" />
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-4/6" />
+            </div>
+          ) : (
+            <article
+              className={`
+                ${fontFamily === "serif" ? "font-serif" : "font-sans"} 
+                leading-relaxed text-justify select-none
+              `}
+              style={{ fontSize: `${fontSize}px` }}
             >
-              <ChevronLeft className="h-4 w-4 mr-1" />
-              {chapterNum > 1 && `Cap. ${chapterNum - 1}`}
-            </Button>
-            <span className="text-sm font-bold text-primary px-4 py-1 bg-primary/10 rounded-full">
-              Capítulo {chapterNum}
-            </span>
-            <Button
-              variant="ghost"
-              size="sm"
-              disabled={chapterNum >= book.chapters_count}
-              onClick={() => navigateChapter('next')}
-              className="text-muted-foreground"
-            >
-              {chapterNum < book.chapters_count && `Cap. ${chapterNum + 1}`}
-              <ChevronRight className="h-4 w-4 ml-1" />
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      <div className="p-4 max-w-2xl mx-auto">
-        {versesLoading ? (
-          <div className="space-y-4">
-            {Array.from({ length: 10 }).map((_, i) => (
-              <Skeleton key={i} className="h-20 w-full rounded-xl" />
-            ))}
-          </div>
-        ) : versesError ? (
-          <div className="text-center py-12">
-            <p className="text-destructive">Erro ao carregar versículos</p>
-          </div>
-        ) : verses && verses.length > 0 ? (
-          <div
-            className="space-y-2 text-foreground"
-            style={{ fontSize: `${fontSize}px`, lineHeight: lineHeight }}
-          >
-            {verses.map((verse) => {
-              const highlight = getHighlightColor(verse.id);
-              const isSelected = selectedVerses.includes(verse.id);
-              const isTarget = highlightedVerse === verse.verse;
-
-              return (
-                <p
-                  key={verse.id}
-                  id={`verse-${verse.verse}`}
-                  onClick={() => toggleVerseSelection(verse.id)}
-                  className={
-                    `rounded-lg px-2 py-1 transition-colors cursor-pointer ` +
-                    `${highlight ? `${highlight.bg} ${highlight.text}` : ''} ` +
-                    `${isSelected ? 'bg-primary/20 ring-2 ring-primary' : ''} ` +
-                    `${!highlight && !isSelected ? 'hover:bg-muted/50' : ''} ` +
-                    `${isTarget ? 'ring-2 ring-primary/60 bg-primary/10' : ''}`
-                  }
+              {versiculos?.map((v) => (
+                <span
+                  key={v.id}
+                  onClick={() => handleToggleVerse(v.versiculo)}
+                  className={`
+                    inline transition-all duration-200 cursor-pointer rounded-sm px-0.5
+                    ${selectedVerses.includes(v.versiculo) ? "bg-primary/30" : "hover:bg-primary/5"}
+                  `}
                 >
-                  {showVerseNumbers && (
-                    <sup className="text-xs text-primary font-bold mr-2 select-none">{verse.verse}</sup>
-                  )}
-                  <span className="tracking-[0.01em]">{verse.text}</span>
-                </p>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="text-center py-12 bg-muted/30 rounded-2xl">
-            <BookOpen className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <p className="text-muted-foreground font-medium">
-              Versículos não disponíveis
-            </p>
-            <p className="text-sm text-muted-foreground mt-2">
-              Esta tradução ({selectedVersion}) ainda não foi importada.
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              Livro: {book.name} (ID: {book.id}) | Capítulo: {chapterNum}
-            </p>
-          </div>
-        )}
-      </div>
+                  <sup className="font-bold text-primary mr-1 text-[0.6em] opacity-80 select-none">{v.versiculo}</sup>
+                  <span className="text-foreground mr-1.5">{v.texto}</span>
+                </span>
+              ))}
+            </article>
+          )}
 
-      {selectionMode && selectedVerses.length > 0 && (
-        <div className="fixed bottom-20 left-0 right-0 p-4 bg-background/95 backdrop-blur-lg border-t">
-          <div className="flex items-center justify-between max-w-2xl mx-auto">
-            <span className="text-sm text-muted-foreground">
-              {selectedVerses.length} versículo(s)
-            </span>
-            <div className="flex items-center gap-2">
-              <Button size="sm" variant="outline" onClick={handleShare}>
-                <Share2 className="h-4 w-4 mr-2" />
-                Compartilhar
-              </Button>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button size="sm" variant="default">
-                    <Highlighter className="h-4 w-4 mr-2" />
-                    Destacar
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-3" align="end">
-                  <p className="text-sm font-medium mb-2">Escolha uma cor</p>
-                  <div className="flex gap-2">
-                    {HIGHLIGHT_COLORS.map((color) => (
-                      <button
-                        key={color.value}
-                        onClick={() => highlightMutation.mutate({ verseIds: selectedVerses, color: color.value })}
-                        className={`w-10 h-10 rounded-full ${color.bg} hover:scale-110 transition-transform ring-2 ring-transparent hover:ring-primary/30 hover:ring-offset-2`}
-                        title={color.name}
-                      />
-                    ))}
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="w-full mt-3 text-destructive"
-                    onClick={() => removeHighlightMutation.mutate(selectedVerses)}
-                  >
-                    Remover destaque
-                  </Button>
-                </PopoverContent>
-              </Popover>
+          {/* Ações de Fim de Capítulo */}
+          {!loading && (
+            <div className="mt-12 flex flex-col items-center gap-6 pb-10">
               <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => {
-                  setSelectedVerses([]);
-                  setSelectionMode(false);
-                }}
+                variant={isRead ? "secondary" : "default"}
+                className="w-full max-w-xs rounded-full py-6 text-base shadow-lg"
+                onClick={markAsRead}
+                disabled={isRead}
               >
-                Cancelar
+                {isRead ? (
+                  <>
+                    <Check className="mr-2 h-5 w-5" /> Concluído
+                  </>
+                ) : (
+                  "Marcar como lido"
+                )}
               </Button>
+
+              <div className="flex justify-between w-full border-t pt-8">
+                <Button
+                  variant="ghost"
+                  disabled={!capituloAnterior}
+                  onClick={() => navigate(`/biblia/${livroId}/${capituloAnterior}`)}
+                  className="flex flex-col h-auto py-2"
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                  <span className="text-[10px] uppercase font-bold text-muted-foreground">Anterior</span>
+                </Button>
+
+                <div className="h-10 w-[1px] bg-border self-center" />
+
+                <Button
+                  variant="ghost"
+                  disabled={!proximoCapitulo}
+                  onClick={() => navigate(`/biblia/${livroId}/${proximoCapitulo}`)}
+                  className="flex flex-col h-auto py-2 text-primary"
+                >
+                  <ChevronRight className="h-5 w-5" />
+                  <span className="text-[10px] uppercase font-bold">Próximo</span>
+                </Button>
+              </div>
             </div>
+          )}
+        </main>
+
+        {/* Rodapé Zoe */}
+        <div className="px-5 mb-4">
+          <div className="bg-primary/5 p-4 rounded-2xl border border-primary/10 flex items-start gap-3">
+            <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+            <p className="text-xs text-muted-foreground leading-tight">
+              Toque nos versículos para selecionar e compartilhar ou destacar passagens importantes.
+            </p>
           </div>
         </div>
-      )}
-
-      {!selectionMode && user && verses && verses.length > 0 && (
-        <div className="fixed bottom-20 left-0 right-0 p-4 bg-gradient-to-t from-background via-background to-transparent">
-          <div className="max-w-2xl mx-auto">
-            <Button
-              className="w-full shadow-lg"
-              size="lg"
-              onClick={() => markAsReadMutation.mutate()}
-              disabled={markAsReadMutation.isPending}
-            >
-              <Check className="h-5 w-5 mr-2" />
-              Marcar como lido
-            </Button>
-          </div>
-        </div>
-      )}
-
+      </div>
       <BottomNav />
-    </div>
+    </PageContainer>
   );
 };
 
