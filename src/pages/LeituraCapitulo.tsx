@@ -1,43 +1,46 @@
-import { useState, useEffect } from "react";
-import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { useState, useEffect, useRef } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
   ChevronLeft,
   ChevronRight,
-  Highlighter,
-  Check,
-  BookOpen,
   Share2,
   Settings2,
-  Copy,
+  Check,
   Info,
+  Copy,
+  Type,
+  BookOpen,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BottomNav } from "@/components/layout/BottomNav";
-import { PageContainer } from "@/components/layout/PageContainer"; // Corrigido para Named Import
-import { useBibleData } from "@/hooks/useBibleData"; // Corrigido para Named Import
+import { PageContainer } from "@/components/layout/PageContainer"; // Corrigido: Named
+import useBibleData from "@/hooks/useBibleData"; // Corrigido: Default
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
 import { Slider } from "@/components/ui/slider";
+import { Separator } from "@/components/ui/separator";
 
 const LeituraCapitulo = () => {
   const { livroId, capitulo } = useParams();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   // Hook de dados da bíblia
   const { versiculos, loading, livroNome, proximoCapitulo, capituloAnterior } = useBibleData(livroId, Number(capitulo));
 
-  // Estados para funcionalidades de leitura
+  // Estados de Preferências (Mantendo a inteligência do seu app)
   const [fontSize, setFontSize] = useState(18);
   const [selectedVerses, setSelectedVerses] = useState<number[]>([]);
   const [isRead, setIsRead] = useState(false);
   const [fontFamily, setFontFamily] = useState<"serif" | "sans">("serif");
 
-  // Carregar preferências e progresso
   useEffect(() => {
+    // Scroll para o topo ao mudar de capítulo
+    window.scrollTo(0, 0);
+
     const savedFontSize = localStorage.getItem("zoe-bible-font-size");
     if (savedFontSize) setFontSize(Number(savedFontSize));
 
@@ -57,7 +60,7 @@ const LeituraCapitulo = () => {
       }
     };
     checkReadStatus();
-    setSelectedVerses([]); // Reseta seleção ao mudar de capítulo
+    setSelectedVerses([]);
   }, [livroId, capitulo]);
 
   const handleToggleVerse = (num: number) => {
@@ -65,23 +68,22 @@ const LeituraCapitulo = () => {
   };
 
   const handleShare = async () => {
-    if (selectedVerses.length === 0) {
-      toast.info("Selecione versículos para compartilhar");
-      return;
-    }
     const textToShare = versiculos
       ?.filter((v) => selectedVerses.includes(v.versiculo))
-      .sort((a, b) => a.versiculo - b.versiculo)
       .map((v) => `${v.versiculo}. ${v.texto}`)
       .join("\n");
 
-    const finalMsg = `*${livroNome} ${capitulo}*\n\n${textToShare}\n\n_Lido no Zoe Church_`;
+    const finalMsg = `*${livroNome} ${capitulo}*\n\n${textToShare}\n\n_Zoe Church App_`;
 
     if (navigator.share) {
-      await navigator.share({ title: "Bíblia Zoe", text: finalMsg });
+      try {
+        await navigator.share({ title: "Bíblia Zoe", text: finalMsg });
+      } catch (e) {
+        console.log(e);
+      }
     } else {
       navigator.clipboard.writeText(finalMsg);
-      toast.success("Copiado para a área de transferência!");
+      toast.success("Copiado com sucesso!");
     }
     setSelectedVerses([]);
   };
@@ -90,14 +92,18 @@ const LeituraCapitulo = () => {
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (!user) return;
-
-    const { error } = await supabase.from("user_progress").upsert({
-      user_id: user.id,
-      book_id: livroId,
-      chapter: Number(capitulo),
-      completed_at: new Date().toISOString(),
-    });
+    if (!user) {
+      toast.error("Entre para salvar seu progresso");
+      return;
+    }
+    const { error } = await supabase
+      .from("user_progress")
+      .upsert({
+        user_id: user.id,
+        book_id: livroId,
+        chapter: Number(capitulo),
+        completed_at: new Date().toISOString(),
+      });
 
     if (!error) {
       setIsRead(true);
@@ -107,17 +113,19 @@ const LeituraCapitulo = () => {
 
   return (
     <PageContainer>
-      <div className="flex flex-col min-h-screen pb-32">
-        {/* Header Superior */}
-        <header className="sticky top-0 z-50 w-full bg-background/95 backdrop-blur-sm border-b">
+      <div className="flex flex-col min-h-screen bg-background pb-32">
+        {/* Header fixo e elegante */}
+        <header className="sticky top-0 z-50 w-full bg-background/95 backdrop-blur-md border-b">
           <div className="flex items-center justify-between p-4 max-w-2xl mx-auto w-full">
             <div className="flex items-center gap-3">
               <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="rounded-full">
                 <ArrowLeft className="h-6 w-6" />
               </Button>
-              <div>
-                <h1 className="text-lg font-bold leading-none">{livroNome || "Carregando..."}</h1>
-                <p className="text-xs text-muted-foreground">Capítulo {capitulo}</p>
+              <div className="flex flex-col">
+                <h1 className="text-lg font-bold leading-none tracking-tight">
+                  {livroNome || <Skeleton className="h-5 w-24" />}
+                </h1>
+                <p className="text-[10px] uppercase font-bold text-primary mt-1">Capítulo {capitulo}</p>
               </div>
             </div>
 
@@ -130,67 +138,55 @@ const LeituraCapitulo = () => {
                 </DrawerTrigger>
                 <DrawerContent>
                   <DrawerHeader>
-                    <DrawerTitle>Configurações de Leitura</DrawerTitle>
+                    <DrawerTitle className="flex items-center gap-2">
+                      <Type className="h-5 w-5" /> Aparência
+                    </DrawerTitle>
                   </DrawerHeader>
-                  <div className="p-6 space-y-6">
+                  <div className="p-6 space-y-8">
                     <div className="space-y-4">
-                      <label className="text-sm font-medium">Tamanho da Fonte: {fontSize}px</label>
-                      <Slider
-                        value={[fontSize]}
-                        min={14}
-                        max={32}
-                        step={1}
-                        onValueChange={(val) => {
-                          setFontSize(val[0]);
-                          localStorage.setItem("zoe-bible-font-size", val[0].toString());
-                        }}
-                      />
+                      <div className="flex justify-between text-sm">
+                        <span>Tamanho da Fonte</span>
+                        <span className="font-bold">{fontSize}px</span>
+                      </div>
+                      <Slider value={[fontSize]} min={14} max={30} step={1} onValueChange={(v) => setFontSize(v[0])} />
                     </div>
-                    <div className="flex gap-4">
+                    <div className="grid grid-cols-2 gap-3">
                       <Button
                         variant={fontFamily === "serif" ? "default" : "outline"}
-                        className="flex-1 font-serif"
                         onClick={() => setFontFamily("serif")}
                       >
-                        Fonte Clássica
+                        Serifada
                       </Button>
                       <Button
                         variant={fontFamily === "sans" ? "default" : "outline"}
-                        className="flex-1 font-sans"
                         onClick={() => setFontFamily("sans")}
                       >
-                        Fonte Moderna
+                        Moderna
                       </Button>
                     </div>
                   </div>
                 </DrawerContent>
               </Drawer>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleShare}
-                disabled={selectedVerses.length === 0}
-                className={selectedVerses.length > 0 ? "text-primary animate-pulse" : ""}
-              >
-                <Share2 className="h-5 w-5" />
+              <Button variant="ghost" size="icon" onClick={handleShare} disabled={selectedVerses.length === 0}>
+                <Share2 className={`h-5 w-5 ${selectedVerses.length > 0 ? "text-primary" : ""}`} />
               </Button>
             </div>
           </div>
         </header>
 
-        {/* Área de Texto Sequencial */}
-        <main className="flex-1 px-5 pt-8 max-w-2xl mx-auto w-full">
+        {/* ÁREA DE LEITURA SEQUENCIAL (A MUDANÇA QUE VOCÊ QUERIA) */}
+        <main className="flex-1 px-6 pt-8 max-w-2xl mx-auto w-full" ref={scrollRef}>
           {loading ? (
             <div className="space-y-4">
               <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-5/6" />
-              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-[90%]" />
+              <Skeleton className="h-4 w-[95%]" />
             </div>
           ) : (
-            <article
+            <div
               className={`
                 ${fontFamily === "serif" ? "font-serif" : "font-sans"} 
-                leading-relaxed text-justify selection:bg-primary/30
+                leading-relaxed text-justify text-foreground/90
               `}
               style={{ fontSize: `${fontSize}px` }}
             >
@@ -199,44 +195,46 @@ const LeituraCapitulo = () => {
                   key={v.id}
                   onClick={() => handleToggleVerse(v.versiculo)}
                   className={`
-                    inline transition-all duration-200 cursor-pointer rounded-sm px-0.5
-                    ${selectedVerses.includes(v.versiculo) ? "bg-primary/20 ring-1 ring-primary/40" : "hover:bg-primary/5"}
+                    inline transition-colors duration-200 cursor-pointer rounded-sm px-0.5
+                    ${selectedVerses.includes(v.versiculo) ? "bg-primary/20 ring-1 ring-primary/30" : "hover:bg-primary/5"}
                   `}
                 >
-                  <sup className="font-bold text-primary mr-1 text-[0.65em] select-none opacity-70">{v.versiculo}</sup>
-                  <span className="text-foreground mr-1.5">{v.texto}</span>
+                  <sup className="font-bold text-primary mr-1 text-[0.6em] opacity-70 select-none">{v.versiculo}</sup>
+                  <span className="mr-1.5">{v.texto}</span>
                 </span>
               ))}
-            </article>
+            </div>
           )}
 
-          {/* Navegação e Progresso */}
+          {/* Botões de Ação e Navegação */}
           {!loading && (
-            <div className="mt-16 space-y-10 pb-20">
+            <div className="mt-16 space-y-10 pb-10">
               <Button
-                variant={isRead ? "secondary" : "default"}
-                className="w-full rounded-full py-7 text-base font-semibold shadow-lg"
+                variant={isRead ? "outline" : "default"}
+                className="w-full py-7 rounded-2xl text-base font-bold transition-all"
                 onClick={markAsRead}
                 disabled={isRead}
               >
                 {isRead ? (
                   <>
-                    <Check className="mr-2 h-5 w-5" /> Capítulo Lido
+                    <Check className="mr-2 h-5 w-5" /> Lido
                   </>
                 ) : (
                   "Marcar como lido"
                 )}
               </Button>
 
-              <div className="flex justify-between items-center border-t pt-8">
+              <Separator className="opacity-50" />
+
+              <div className="flex justify-between items-center gap-4">
                 <Button
                   variant="ghost"
                   disabled={!capituloAnterior}
                   onClick={() => navigate(`/biblia/${livroId}/${capituloAnterior}`)}
-                  className="flex flex-col h-auto py-2 px-6"
+                  className="flex-1 flex flex-col h-auto py-4"
                 >
-                  <ChevronLeft className="h-6 w-6" />
-                  <span className="text-[10px] uppercase font-bold text-muted-foreground mt-1">Anterior</span>
+                  <ChevronLeft className="h-5 w-5 mb-1" />
+                  <span className="text-[10px] uppercase font-bold text-muted-foreground">Anterior</span>
                 </Button>
 
                 <div className="h-10 w-px bg-border" />
@@ -245,15 +243,24 @@ const LeituraCapitulo = () => {
                   variant="ghost"
                   disabled={!proximoCapitulo}
                   onClick={() => navigate(`/biblia/${livroId}/${proximoCapitulo}`)}
-                  className="flex flex-col h-auto py-2 px-6 text-primary"
+                  className="flex-1 flex flex-col h-auto py-4 text-primary"
                 >
-                  <ChevronRight className="h-6 w-6" />
-                  <span className="text-[10px] uppercase font-bold mt-1">Próximo</span>
+                  <ChevronRight className="h-5 w-5 mb-1" />
+                  <span className="text-[10px] uppercase font-bold">Próximo</span>
                 </Button>
               </div>
             </div>
           )}
         </main>
+
+        <div className="px-5 mb-10">
+          <div className="bg-primary/5 p-4 rounded-2xl border border-primary/10 flex gap-3 items-start text-muted-foreground">
+            <Info className="h-5 w-5 text-primary shrink-0" />
+            <p className="text-xs leading-relaxed">
+              Toque nos versículos para selecionar e compartilhar. Ajuste o tamanho da letra no ícone de engrenagem.
+            </p>
+          </div>
+        </div>
       </div>
       <BottomNav />
     </PageContainer>
