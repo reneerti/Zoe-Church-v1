@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, ChevronLeft, ChevronRight, Highlighter, Check, BookOpen, Share2, Settings2 } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Highlighter, BookOpen, Share2, Settings2, StickyNote, X, Check, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { useBibleBooks, useBibleVersions } from "@/hooks/useBibleData";
@@ -11,10 +11,12 @@ import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetClose } from "@/components/ui/sheet";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
 const HIGHLIGHT_COLORS = [
   { name: "Amarelo", value: "yellow", bg: "bg-yellow-200", text: "text-yellow-900" },
@@ -37,7 +39,14 @@ interface Highlight {
   note: string | null;
 }
 
-const LeituraCapitulo = () => {
+interface UserNote {
+  id: string;
+  verse_id: string;
+  content: string;
+  created_at: string;
+}
+
+export default function LeituraCapitulo() {
   const { bookId, chapter } = useParams<{ bookId: string; chapter: string }>();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -46,6 +55,7 @@ const LeituraCapitulo = () => {
   const queryClient = useQueryClient();
   const { data: books } = useBibleBooks();
   const { data: versions } = useBibleVersions();
+  const contentRef = useRef<HTMLDivElement>(null);
 
   const [selectedVerses, setSelectedVerses] = useState<string[]>([]);
   const [selectionMode, setSelectionMode] = useState(false);
@@ -53,7 +63,12 @@ const LeituraCapitulo = () => {
   const [fontSize, setFontSize] = useState(18);
   const [lineHeight, setLineHeight] = useState(1.8);
   const [showVerseNumbers, setShowVerseNumbers] = useState(true);
-  const [highlightedVerse, setHighlightedVerse] = useState<number | null>(null);
+
+  // Notes state
+  const [noteDialogOpen, setNoteDialogOpen] = useState(false);
+  const [noteVerseId, setNoteVerseId] = useState<string | null>(null);
+  const [noteContent, setNoteContent] = useState("");
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
 
   const book = books?.find((b) => b.abbreviation.toLowerCase() === bookId?.toLowerCase());
   const chapterNum = parseInt(chapter || "1", 10);
@@ -70,13 +85,13 @@ const LeituraCapitulo = () => {
     queryFn: async () => {
       if (!book) return [];
 
-      const { data: versionData, error: versionError } = await supabase
+      const { data: versionData } = await supabase
         .from("bible_versions")
         .select("id")
         .eq("code", selectedVersion)
         .maybeSingle();
 
-      if (versionError || !versionData) {
+      if (!versionData) {
         console.error("Version not found:", selectedVersion);
         return [];
       }
@@ -89,20 +104,17 @@ const LeituraCapitulo = () => {
         .eq("version_id", versionData.id)
         .order("verse");
 
-      if (error) {
-        console.error("Error fetching verses:", error);
-        throw error;
-      }
+      if (error) throw error;
       return data as Verse[];
     },
     enabled: !!book,
   });
 
-  // Fetch user highlights for this chapter
+  // Fetch user highlights
   const { data: highlights } = useQuery({
     queryKey: ["highlights", book?.id, chapterNum, user?.id],
     queryFn: async () => {
-      if (!user || !verses) return [];
+      if (!user || !verses || verses.length === 0) return [];
       const verseIds = verses.map((v) => v.id);
       const { data, error } = await supabase
         .from("verse_highlights")
@@ -116,6 +128,25 @@ const LeituraCapitulo = () => {
     enabled: !!user && !!verses && verses.length > 0,
   });
 
+  // Fetch user notes
+  const { data: userNotes } = useQuery({
+    queryKey: ["user_notes", book?.id, chapterNum, user?.id],
+    queryFn: async () => {
+      if (!user || !verses || verses.length === 0) return [];
+      const verseIds = verses.map((v) => v.id);
+      const { data, error } = await supabase
+        .from("user_notes")
+        .select("id, verse_id, content, created_at")
+        .eq("user_id", user.id)
+        .in("verse_id", verseIds);
+
+      if (error) throw error;
+      return data as UserNote[];
+    },
+    enabled: !!user && !!verses && verses.length > 0,
+  });
+
+  // Highlight mutation
   const highlightMutation = useMutation({
     mutationFn: async ({ verseIds, color }: { verseIds: string[]; color: string }) => {
       if (!user) throw new Error("Not authenticated");
@@ -129,7 +160,6 @@ const LeituraCapitulo = () => {
       }));
 
       const { error } = await supabase.from("verse_highlights").insert(inserts);
-
       if (error) throw error;
     },
     onSuccess: () => {
@@ -140,10 +170,10 @@ const LeituraCapitulo = () => {
     },
   });
 
+  // Remove highlight
   const removeHighlightMutation = useMutation({
     mutationFn: async (verseIds: string[]) => {
       if (!user) throw new Error("Not authenticated");
-
       const { error } = await supabase
         .from("verse_highlights")
         .delete()
@@ -160,6 +190,50 @@ const LeituraCapitulo = () => {
     },
   });
 
+  // Save note mutation
+  const saveNoteMutation = useMutation({
+    mutationFn: async ({ verseId, content, noteId }: { verseId: string; content: string; noteId?: string }) => {
+      if (!user) throw new Error("Not authenticated");
+
+      if (noteId) {
+        const { error } = await supabase
+          .from("user_notes")
+          .update({ content })
+          .eq("id", noteId);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("user_notes").insert({
+          user_id: user.id,
+          verse_id: verseId,
+          content,
+        });
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["user_notes"] });
+      setNoteDialogOpen(false);
+      setNoteContent("");
+      setNoteVerseId(null);
+      setEditingNoteId(null);
+      toast({ title: "Nota salva!" });
+    },
+  });
+
+  // Delete note mutation
+  const deleteNoteMutation = useMutation({
+    mutationFn: async (noteId: string) => {
+      if (!user) throw new Error("Not authenticated");
+      const { error } = await supabase.from("user_notes").delete().eq("id", noteId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["user_notes"] });
+      toast({ title: "Nota excluída!" });
+    },
+  });
+
+  // Mark chapter as read
   const markAsReadMutation = useMutation({
     mutationFn: async () => {
       if (!user || !book) throw new Error("Not authenticated");
@@ -190,13 +264,29 @@ const LeituraCapitulo = () => {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["readingProgress"] });
+      queryClient.invalidateQueries({ queryKey: ["reading-progress"] });
       toast({
-        title: "Capítulo marcado como lido!",
+        title: "Capítulo concluído!",
         description: "Seu progresso foi atualizado.",
       });
     },
   });
+
+  // Scroll to verse
+  useEffect(() => {
+    if (verseToScroll && verses && contentRef.current) {
+      const element = document.getElementById(`verse-${verseToScroll}`);
+      if (element) {
+        setTimeout(() => {
+          element.scrollIntoView({ behavior: "smooth", block: "center" });
+          element.classList.add("ring-2", "ring-primary", "bg-primary/10");
+          setTimeout(() => {
+            element.classList.remove("ring-2", "ring-primary", "bg-primary/10");
+          }, 3000);
+        }, 300);
+      }
+    }
+  }, [verseToScroll, verses]);
 
   const toggleVerseSelection = (verseId: string) => {
     if (!user) {
@@ -209,12 +299,18 @@ const LeituraCapitulo = () => {
     }
 
     setSelectionMode(true);
-    setSelectedVerses((prev) => (prev.includes(verseId) ? prev.filter((id) => id !== verseId) : [...prev, verseId]));
+    setSelectedVerses((prev) =>
+      prev.includes(verseId) ? prev.filter((id) => id !== verseId) : [...prev, verseId]
+    );
   };
 
   const getHighlightColor = (verseId: string) => {
     const highlight = highlights?.find((h) => h.verse_id === verseId);
     return highlight ? HIGHLIGHT_COLORS.find((c) => c.value === highlight.color) : null;
+  };
+
+  const getVerseNote = (verseId: string) => {
+    return userNotes?.find((n) => n.verse_id === verseId);
   };
 
   const navigateChapter = (direction: "prev" | "next") => {
@@ -253,6 +349,19 @@ const LeituraCapitulo = () => {
     }
   };
 
+  const openNoteDialog = (verseId: string) => {
+    const existingNote = getVerseNote(verseId);
+    setNoteVerseId(verseId);
+    if (existingNote) {
+      setNoteContent(existingNote.content);
+      setEditingNoteId(existingNote.id);
+    } else {
+      setNoteContent("");
+      setEditingNoteId(null);
+    }
+    setNoteDialogOpen(true);
+  };
+
   if (!book) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -266,6 +375,7 @@ const LeituraCapitulo = () => {
 
   return (
     <div className="min-h-screen bg-background pb-32">
+      {/* Header */}
       <header className="sticky top-0 z-10 bg-background/95 backdrop-blur-lg border-b border-border/50">
         <div className="px-4 py-3">
           <div className="flex items-center justify-between">
@@ -294,13 +404,7 @@ const LeituraCapitulo = () => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {(
-                    versions || [
-                      { id: "1", code: "NVI", name: "NVI" },
-                      { id: "2", code: "ARA", name: "ARA" },
-                      { id: "3", code: "NTLH", name: "NTLH" },
-                    ]
-                  ).map((v) => (
+                  {(versions || [{ id: "1", code: "NVI", name: "NVI" }]).map((v) => (
                     <SelectItem key={v.code} value={v.code}>
                       {v.code}
                     </SelectItem>
@@ -355,6 +459,7 @@ const LeituraCapitulo = () => {
             </div>
           </div>
 
+          {/* Chapter Navigation */}
           <div className="flex items-center justify-center gap-4 mt-2">
             <Button
               variant="ghost"
@@ -383,11 +488,12 @@ const LeituraCapitulo = () => {
         </div>
       </header>
 
-      <div className="p-4 max-w-2xl mx-auto">
+      {/* Bible Text - Flowing paragraph style */}
+      <div className="p-4 max-w-2xl mx-auto" ref={contentRef}>
         {versesLoading ? (
           <div className="space-y-4">
-            {Array.from({ length: 10 }).map((_, i) => (
-              <Skeleton key={i} className="h-20 w-full rounded-xl" />
+            {Array.from({ length: 8 }).map((_, i) => (
+              <Skeleton key={i} className="h-6 w-full rounded" />
             ))}
           </div>
         ) : versesError ? (
@@ -395,30 +501,44 @@ const LeituraCapitulo = () => {
             <p className="text-destructive">Erro ao carregar versículos</p>
           </div>
         ) : verses && verses.length > 0 ? (
-          <div className="space-y-2 text-foreground" style={{ fontSize: `${fontSize}px`, lineHeight: lineHeight }}>
+          <div
+            className="prose prose-lg max-w-none text-foreground font-serif text-justify"
+            style={{ fontSize: `${fontSize}px`, lineHeight }}
+          >
             {verses.map((verse) => {
               const highlight = getHighlightColor(verse.id);
+              const note = getVerseNote(verse.id);
               const isSelected = selectedVerses.includes(verse.id);
-              const isTarget = highlightedVerse === verse.verse;
 
               return (
-                <p
+                <span
                   key={verse.id}
                   id={`verse-${verse.verse}`}
                   onClick={() => toggleVerseSelection(verse.id)}
-                  className={
-                    `rounded-lg px-2 py-1 transition-colors cursor-pointer ` +
-                    `${highlight ? `${highlight.bg} ${highlight.text}` : ""} ` +
-                    `${isSelected ? "bg-primary/20 ring-2 ring-primary" : ""} ` +
-                    `${!highlight && !isSelected ? "hover:bg-muted/50" : ""} ` +
-                    `${isTarget ? "ring-2 ring-primary/60 bg-primary/10" : ""}`
-                  }
+                  className={`
+                    inline transition-all duration-200 cursor-pointer rounded-sm px-0.5
+                    ${highlight ? `${highlight.bg} ${highlight.text}` : ""}
+                    ${isSelected ? "bg-primary/30 ring-2 ring-primary/20" : "hover:bg-muted/50"}
+                  `}
                 >
                   {showVerseNumbers && (
-                    <sup className="text-xs text-primary font-bold mr-2 select-none">{verse.verse}</sup>
+                    <sup className="text-primary font-bold mr-1 text-[0.6em] select-none opacity-70">
+                      {verse.verse}
+                    </sup>
                   )}
-                  <span className="tracking-[0.01em]">{verse.text}</span>
-                </p>
+                  <span className="mr-1">{verse.text}</span>
+                  {note && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openNoteDialog(verse.id);
+                      }}
+                      className="inline-flex items-center justify-center w-4 h-4 bg-amber-400 text-amber-900 rounded-full text-[10px] font-bold align-super hover:bg-amber-500"
+                    >
+                      <StickyNote className="w-2.5 h-2.5" />
+                    </button>
+                  )}
+                </span>
               );
             })}
           </div>
@@ -429,18 +549,51 @@ const LeituraCapitulo = () => {
             <p className="text-sm text-muted-foreground mt-2">
               Esta tradução ({selectedVersion}) ainda não foi importada.
             </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              Livro: {book.name} (ID: {book.id}) | Capítulo: {chapterNum}
-            </p>
           </div>
         )}
       </div>
 
+      {/* Mark as Read Button */}
+      {user && verses && verses.length > 0 && (
+        <div className="max-w-2xl mx-auto px-4 py-6">
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() => markAsReadMutation.mutate()}
+            disabled={markAsReadMutation.isPending}
+          >
+            <Check className="h-4 w-4 mr-2" />
+            Marcar como lido
+          </Button>
+        </div>
+      )}
+
+      {/* Selection Toolbar */}
       {selectionMode && selectedVerses.length > 0 && (
-        <div className="fixed bottom-20 left-0 right-0 p-4 bg-background/95 backdrop-blur-lg border-t">
+        <div className="fixed bottom-20 left-0 right-0 p-4 bg-background/95 backdrop-blur-lg border-t z-20">
           <div className="flex items-center justify-between max-w-2xl mx-auto">
-            <span className="text-sm text-muted-foreground">{selectedVerses.length} versículo(s)</span>
             <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">
+                {selectedVerses.length} versículo(s)
+              </span>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  setSelectedVerses([]);
+                  setSelectionMode(false);
+                }}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="flex items-center gap-2">
+              {selectedVerses.length === 1 && (
+                <Button size="sm" variant="outline" onClick={() => openNoteDialog(selectedVerses[0])}>
+                  <StickyNote className="h-4 w-4 mr-2" />
+                  Nota
+                </Button>
+              )}
               <Button size="sm" variant="outline" onClick={handleShare}>
                 <Share2 className="h-4 w-4 mr-2" />
                 Compartilhar
@@ -464,50 +617,71 @@ const LeituraCapitulo = () => {
                       />
                     ))}
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="w-full mt-3 text-destructive"
-                    onClick={() => removeHighlightMutation.mutate(selectedVerses)}
-                  >
-                    Remover destaque
-                  </Button>
+                  {highlights?.some((h) => selectedVerses.includes(h.verse_id)) && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full mt-2 text-destructive"
+                      onClick={() => removeHighlightMutation.mutate(selectedVerses)}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Remover destaque
+                    </Button>
+                  )}
                 </PopoverContent>
               </Popover>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => {
-                  setSelectedVerses([]);
-                  setSelectionMode(false);
-                }}
-              >
-                Cancelar
-              </Button>
             </div>
           </div>
         </div>
       )}
 
-      {!selectionMode && user && verses && verses.length > 0 && (
-        <div className="fixed bottom-20 left-0 right-0 p-4 bg-gradient-to-t from-background via-background to-transparent">
-          <div className="max-w-2xl mx-auto">
+      {/* Note Dialog */}
+      <Dialog open={noteDialogOpen} onOpenChange={setNoteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {editingNoteId ? "Editar Nota" : "Nova Nota"}
+            </DialogTitle>
+          </DialogHeader>
+          <Textarea
+            value={noteContent}
+            onChange={(e) => setNoteContent(e.target.value)}
+            placeholder="Escreva sua reflexão ou anotação..."
+            className="min-h-[150px]"
+          />
+          <DialogFooter className="gap-2">
+            {editingNoteId && (
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  deleteNoteMutation.mutate(editingNoteId);
+                  setNoteDialogOpen(false);
+                }}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Excluir
+              </Button>
+            )}
             <Button
-              className="w-full shadow-lg"
-              size="lg"
-              onClick={() => markAsReadMutation.mutate()}
-              disabled={markAsReadMutation.isPending}
+              onClick={() => {
+                if (noteVerseId && noteContent.trim()) {
+                  saveNoteMutation.mutate({
+                    verseId: noteVerseId,
+                    content: noteContent,
+                    noteId: editingNoteId || undefined,
+                  });
+                }
+              }}
+              disabled={!noteContent.trim() || saveNoteMutation.isPending}
             >
-              <Check className="h-5 w-5 mr-2" />
-              Marcar como lido
+              <Check className="h-4 w-4 mr-2" />
+              Salvar
             </Button>
-          </div>
-        </div>
-      )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <BottomNav />
     </div>
   );
-};
-
-export default LeituraCapitulo;
+}
