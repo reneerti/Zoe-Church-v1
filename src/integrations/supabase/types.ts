@@ -1852,6 +1852,41 @@ export type Database = {
         }
         Relationships: []
       }
+      user_notes: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+          verse_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+          verse_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+          verse_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_notes_verse_id_fkey"
+            columns: ["verse_id"]
+            isOneToOne: false
+            referencedRelation: "bible_verses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_reading_plans: {
         Row: {
           completed_at: string | null

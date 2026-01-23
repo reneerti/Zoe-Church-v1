@@ -45,9 +45,49 @@ export default function BuscaBiblia() {
   const { data: versoes } = useBibleVersions();
   const { data: livros } = useBibleBooks();
   
+  // Parse reference like "João 3:16" or "Gn 1:1"
+  const parseReference = useCallback((input: string) => {
+    const refPattern = /^(\d?\s?[a-zA-ZÀ-ÿ]+)\s*(\d+):?(\d+)?$/i;
+    const match = input.trim().match(refPattern);
+    
+    if (!match) return null;
+    
+    const [, bookPart, chapter, verse] = match;
+    const bookName = bookPart.trim().toLowerCase();
+    
+    const book = livros?.find((l) => 
+      l.name.toLowerCase().startsWith(bookName) ||
+      l.abbreviation.toLowerCase() === bookName ||
+      l.abbreviation.toLowerCase().startsWith(bookName)
+    );
+    
+    if (!book) return null;
+    
+    return {
+      book,
+      chapter: parseInt(chapter, 10),
+      verse: verse ? parseInt(verse, 10) : undefined,
+    };
+  }, [livros]);
+
+  const navegarParaReferencia = useCallback(() => {
+    const ref = parseReference(termo);
+    if (ref) {
+      const path = `/biblia/${ref.book.abbreviation.toLowerCase()}/${ref.chapter}${ref.verse ? `?v=${ref.verse}` : ''}`;
+      navigate(path);
+      return true;
+    }
+    return false;
+  }, [termo, parseReference, navigate]);
+  
   const buscar = useCallback(async () => {
     if (termo.length < 2) {
       setResultados([]);
+      return;
+    }
+    
+    // Try reference first
+    if (parseReference(termo)) {
       return;
     }
     
@@ -107,7 +147,7 @@ export default function BuscaBiblia() {
     } finally {
       setLoading(false);
     }
-  }, [termo, filtros, livros, setSearchParams]);
+  }, [termo, filtros, livros, setSearchParams, parseReference]);
   
   useEffect(() => {
     const debounce = setTimeout(() => {
@@ -166,8 +206,8 @@ export default function BuscaBiblia() {
               onChange={(e) => setTermo(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
-                  const ref = tentarIrParaReferencia();
-                  if (ref) e.preventDefault();
+                  const navigated = navegarParaReferencia();
+                  if (navigated) e.preventDefault();
                 }
               }}
               placeholder="Buscar na Bíblia ou digite uma referência (ex: João 3:16)"
@@ -246,6 +286,21 @@ export default function BuscaBiblia() {
         )}
       </header>
       
+      {/* Reference hint */}
+      {termo && parseReference(termo) && (
+        <div className="px-4 py-3 bg-primary/10 border-b">
+          <Button
+            variant="ghost"
+            className="w-full justify-start text-primary"
+            onClick={navegarParaReferencia}
+          >
+            <BookOpen className="h-4 w-4 mr-2" />
+            Ir para {parseReference(termo)?.book.name} {parseReference(termo)?.chapter}
+            {parseReference(termo)?.verse && `:${parseReference(termo)?.verse}`}
+          </Button>
+        </div>
+      )}
+      
       {/* Results */}
       <div className="p-4 space-y-3">
         {loading && (
@@ -307,7 +362,7 @@ export default function BuscaBiblia() {
           </>
         )}
         
-        {!loading && termo.length >= 2 && resultados.length === 0 && (
+        {!loading && termo.length >= 2 && resultados.length === 0 && !parseReference(termo) && (
           <div className="text-center py-12">
             <Search className="w-16 h-16 mx-auto text-muted-foreground/30 mb-4" />
             <h3 className="text-lg font-medium text-muted-foreground mb-2">
