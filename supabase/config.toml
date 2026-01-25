@@ -6,8 +6,17 @@ verify_jwt = false
 [functions.import-bible]
 verify_jwt = false
 
+[functions.import-bible-real]
+verify_jwt = false
+
 [functions.populate-database]
 verify_jwt = false
 
 [functions.send-convite-email]
+verify_jwt = false
+
+[functions.send-push-notification]
+verify_jwt = false
+
+[functions.import-real-bible]
 verify_jwt = false
