@@ -10,6 +10,7 @@ interface UserProfile {
   role: UserRole;
   unidadeId: string | null;
   unidadeSlug: string | null;
+  unidadeNome: string | null;
   nome: string | null;
   email: string;
 }
@@ -25,6 +26,7 @@ interface AuthContextType {
   isUsuario: boolean;
   unidadeId: string | null;
   unidadeSlug: string | null;
+  unidadeNome: string | null;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signInWithGoogle: () => Promise<{ error: Error | null }>;
@@ -72,6 +74,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           role: 'super_user',
           unidadeId: null,
           unidadeSlug: null,
+          unidadeNome: null,
           nome: superUser.nome,
           email: superUser.email,
         };
@@ -82,19 +85,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .from('masters')
         .select(`
           id, nome, email, unidade_id,
-          unidades:unidade_id (slug)
+          unidades:unidade_id (slug, apelido_app, nome_fantasia)
         `)
         .eq('user_id', userId)
         .eq('is_active', true)
         .single();
 
       if (master) {
-        const unidade = master.unidades as unknown as { slug: string } | null;
+        const unidade = master.unidades as unknown as { slug: string; apelido_app: string | null; nome_fantasia: string } | null;
         return {
           id: master.id,
           role: 'master',
           unidadeId: master.unidade_id,
           unidadeSlug: unidade?.slug || null,
+          unidadeNome: unidade?.apelido_app || unidade?.nome_fantasia || null,
           nome: master.nome,
           email: master.email,
         };
@@ -105,19 +109,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .from('usuarios')
         .select(`
           id, nome, email, unidade_id,
-          unidades:unidade_id (slug)
+          unidades:unidade_id (slug, apelido_app, nome_fantasia)
         `)
         .eq('user_id', userId)
         .eq('is_active', true)
         .single();
 
       if (usuario) {
-        const unidade = usuario.unidades as unknown as { slug: string } | null;
+        const unidade = usuario.unidades as unknown as { slug: string; apelido_app: string | null; nome_fantasia: string } | null;
         return {
           id: usuario.id,
           role: 'usuario',
           unidadeId: usuario.unidade_id,
           unidadeSlug: unidade?.slug || null,
+          unidadeNome: unidade?.apelido_app || unidade?.nome_fantasia || null,
           nome: usuario.nome,
           email: usuario.email,
         };
@@ -129,6 +134,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         role: null,
         unidadeId: null,
         unidadeSlug: null,
+        unidadeNome: null,
         nome: null,
         email: email,
       };
@@ -225,6 +231,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const isUsuario = role === 'usuario';
   const unidadeId = profile?.unidadeId ?? null;
   const unidadeSlug = profile?.unidadeSlug ?? null;
+  const unidadeNome = profile?.unidadeNome ?? null;
 
   return (
     <AuthContext.Provider 
@@ -239,6 +246,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isUsuario,
         unidadeId,
         unidadeSlug,
+        unidadeNome,
         signUp, 
         signIn, 
         signInWithGoogle, 

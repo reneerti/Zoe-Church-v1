@@ -9,7 +9,7 @@ export function useBiblicalChat() {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
-      content: "Olá! 👋 Sou o Zoe AI, assistente bíblico. Como posso ajudá-lo hoje? Você pode me perguntar sobre versículos, contexto histórico, ou pedir orientação espiritual baseada na Palavra de Deus.",
+      content: "Olá! 👋 Sou o **Zoe AI**, assistente bíblico. Como posso ajudá-lo hoje? Você pode me perguntar sobre *versículos*, __contexto histórico__, ou pedir orientação espiritual baseada na Palavra de Deus.",
     },
   ]);
   const [isLoading, setIsLoading] = useState(false);
@@ -134,10 +134,10 @@ export function useBiblicalChat() {
   const clearMessages = useCallback(() => {
     setMessages([{
       role: "assistant",
-      content: "Olá! 👋 Sou o Zoe AI, assistente bíblico. Como posso ajudá-lo hoje?",
+      content: "Olá! 👋 Sou o **Zoe AI**, assistente bíblico. Como posso ajudá-lo hoje? Você pode me perguntar sobre *versículos*, __contexto histórico__, ou pedir orientação espiritual baseada na Palavra de Deus.",
     }]);
     setError(null);
   }, []);
 
-  return { messages, isLoading, error, sendMessage, clearMessages };
+  return { messages, isLoading, error, sendMessage, clearMessages, setMessages };
 }

@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { 
   BookOpen, 
   Music, 
@@ -20,7 +19,6 @@ import { DailyVerse } from "@/components/home/DailyVerse";
 import { QuickActions } from "@/components/home/QuickActions";
 import { ZoeAIButton } from "@/components/home/ZoeAIButton";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { PushNotificationBanner } from "@/components/notifications/PushNotificationManager";
@@ -91,44 +89,12 @@ const modules = [
   },
 ];
 
-interface UnidadeInfo {
-  nome_fantasia: string;
-  apelido_app: string;
-  logo_url: string | null;
-  logo_icon_url: string | null;
-  cor_primaria: string | null;
-}
-
 export default function Index() {
-  const { user, profile, isSuperUser, isMaster, unidadeSlug } = useAuth();
+  const { user, profile, isSuperUser, isMaster, unidadeSlug, unidadeNome } = useAuth();
   const navigate = useNavigate();
-  const [unidade, setUnidade] = useState<UnidadeInfo | null>(null);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchUnidade = async () => {
-      if (profile?.unidadeId) {
-        const { data } = await supabase
-          .from("unidades")
-          .select("nome_fantasia, apelido_app, logo_url, logo_icon_url, cor_primaria")
-          .eq("id", profile.unidadeId)
-          .single();
-        
-        if (data) {
-          setUnidade(data);
-        }
-      }
-      setLoading(false);
-    };
-
-    if (profile) {
-      fetchUnidade();
-    } else {
-      setLoading(false);
-    }
-  }, [profile]);
-
-  const churchName = unidade?.apelido_app || unidade?.nome_fantasia || "Minha Igreja";
+  // Use unidadeNome from context (already fetched with profile)
+  const churchName = unidadeNome || "Minha Igreja";
 
   return (
     <>
