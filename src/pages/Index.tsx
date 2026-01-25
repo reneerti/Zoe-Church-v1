@@ -18,6 +18,7 @@ import { BottomNav } from "@/components/layout/BottomNav";
 import { ModuleCard } from "@/components/home/ModuleCard";
 import { DailyVerse } from "@/components/home/DailyVerse";
 import { QuickActions } from "@/components/home/QuickActions";
+import { ZoeAIButton } from "@/components/home/ZoeAIButton";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -140,6 +141,11 @@ export default function Index() {
             {user ? `Olá, ${profile?.nome || 'bem-vindo(a)'}!` : 'Bem-vindo(a) à'}
           </p>
           <h2 className="text-2xl font-bold text-foreground">{churchName.toUpperCase()}</h2>
+        </div>
+
+        {/* ZOE AI Button - Hero CTA */}
+        <div className="py-3 opacity-0 animate-fade-in" style={{ animationDelay: "75ms" }}>
+          <ZoeAIButton />
         </div>
 
         {/* Admin/Master Quick Access */}
