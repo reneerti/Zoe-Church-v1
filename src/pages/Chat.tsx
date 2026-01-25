@@ -9,7 +9,8 @@ import { useBiblicalChat } from "@/hooks/useBiblicalChat";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-
+import { MarkdownRenderer } from "@/components/chat/MarkdownRenderer";
+import { ChatHistory } from "@/components/chat/ChatHistory";
 const suggestedQuestions = [
   "O que significa João 3:16?",
   "Como posso crescer na fé?",
@@ -22,8 +23,12 @@ const suggestedQuestions = [
 export default function Chat() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { messages, isLoading, error, sendMessage, clearMessages } = useBiblicalChat();
+  const { messages, isLoading, error, sendMessage, clearMessages, setMessages } = useBiblicalChat();
   const [input, setInput] = useState("");
+
+  const handleLoadHistory = (historyMessages: { role: "user" | "assistant"; content: string }[]) => {
+    setMessages(historyMessages);
+  };
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -74,6 +79,10 @@ export default function Chat() {
               </div>
             </div>
           </div>
+          <ChatHistory 
+            onSelectHistory={handleLoadHistory} 
+            currentMessages={messages} 
+          />
           <Button 
             variant="ghost" 
             size="icon" 
@@ -134,7 +143,11 @@ export default function Chat() {
                   ? "bg-muted rounded-tl-sm" 
                   : "bg-primary text-primary-foreground rounded-tr-sm"
               )}>
-                <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                {message.role === "assistant" ? (
+                  <MarkdownRenderer content={message.content} className="text-sm" />
+                ) : (
+                  <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                )}
               </div>
             </div>
           ))}
