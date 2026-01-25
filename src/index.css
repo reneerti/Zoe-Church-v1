@@ -202,57 +202,57 @@
 }
 
 @layer components {
-  /* Module Cards - Modern Gradient Style with forced colors */
+  /* Module Cards - Modern Gradient Style (token-based) */
   .module-card {
     @apply relative overflow-hidden rounded-2xl p-5 transition-all duration-300;
     @apply hover:scale-[1.02] hover:shadow-xl active:scale-[0.98];
     @apply shadow-md;
-    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    background: var(--gradient-hero);
   }
 
   .module-card-bible {
-    background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
-    box-shadow: 0 4px 20px -4px rgba(59, 130, 246, 0.5);
+    background: linear-gradient(135deg, hsl(var(--bible)) 0%, hsl(var(--primary)) 100%) !important;
+    box-shadow: 0 10px 30px -12px hsl(var(--bible) / 0.55);
   }
 
   .module-card-planos {
-    background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%);
-    box-shadow: 0 4px 20px -4px rgba(139, 92, 246, 0.5);
+    background: linear-gradient(135deg, hsl(var(--planos)) 0%, hsl(var(--secondary)) 100%) !important;
+    box-shadow: 0 10px 30px -12px hsl(var(--planos) / 0.55);
   }
 
   .module-card-harpa {
-    background: linear-gradient(135deg, #a855f7 0%, #d946ef 100%);
-    box-shadow: 0 4px 20px -4px rgba(168, 85, 247, 0.5);
+    background: linear-gradient(135deg, hsl(var(--harpa)) 0%, hsl(var(--secondary)) 100%) !important;
+    box-shadow: 0 10px 30px -12px hsl(var(--harpa) / 0.55);
   }
 
   .module-card-agenda {
-    background: linear-gradient(135deg, #10b981 0%, #14b8a6 100%);
-    box-shadow: 0 4px 20px -4px rgba(16, 185, 129, 0.5);
+    background: linear-gradient(135deg, hsl(var(--agenda)) 0%, hsl(var(--convertidos)) 100%) !important;
+    box-shadow: 0 10px 30px -12px hsl(var(--agenda) / 0.55);
   }
 
   .module-card-devocional {
-    background: linear-gradient(135deg, #f97316 0%, #facc15 100%);
-    box-shadow: 0 4px 20px -4px rgba(249, 115, 22, 0.5);
+    background: linear-gradient(135deg, hsl(var(--devocional)) 0%, hsl(var(--accent)) 100%) !important;
+    box-shadow: 0 10px 30px -12px hsl(var(--devocional) / 0.55);
   }
 
   .module-card-ofertas {
-    background: linear-gradient(135deg, #ec4899 0%, #f43f5e 100%);
-    box-shadow: 0 4px 20px -4px rgba(236, 72, 153, 0.5);
+    background: linear-gradient(135deg, hsl(var(--ofertas)) 0%, hsl(var(--videos)) 100%) !important;
+    box-shadow: 0 10px 30px -12px hsl(var(--ofertas) / 0.55);
   }
 
   .module-card-videos {
-    background: linear-gradient(135deg, #ef4444 0%, #f97316 100%);
-    box-shadow: 0 4px 20px -4px rgba(239, 68, 68, 0.5);
+    background: linear-gradient(135deg, hsl(var(--videos)) 0%, hsl(var(--devocional)) 100%) !important;
+    box-shadow: 0 10px 30px -12px hsl(var(--videos) / 0.55);
   }
 
   .module-card-lideranca {
-    background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%);
-    box-shadow: 0 4px 20px -4px rgba(14, 165, 233, 0.5);
+    background: linear-gradient(135deg, hsl(var(--lideranca)) 0%, hsl(var(--bible)) 100%) !important;
+    box-shadow: 0 10px 30px -12px hsl(var(--lideranca) / 0.55);
   }
 
   .module-card-convertidos {
-    background: linear-gradient(135deg, #22c55e 0%, #10b981 100%);
-    box-shadow: 0 4px 20px -4px rgba(34, 197, 94, 0.5);
+    background: linear-gradient(135deg, hsl(var(--convertidos)) 0%, hsl(var(--agenda)) 100%) !important;
+    box-shadow: 0 10px 30px -12px hsl(var(--convertidos) / 0.55);
   }
 
   /* Force white text on all module cards */
@@ -261,7 +261,7 @@
   .module-card p,
   .module-card span,
   .module-card svg {
-    color: white !important;
+    color: hsl(var(--primary-foreground)) !important;
   }
 
   /* Glass Effect */
