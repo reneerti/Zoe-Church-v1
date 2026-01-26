@@ -49,6 +49,54 @@ export type Database = {
           },
         ]
       }
+      activities: {
+        Row: {
+          broker_id: string
+          created_at: string
+          details: string | null
+          id: string
+          metadata: Json | null
+          points: number
+          property_id: string | null
+          type: string
+        }
+        Insert: {
+          broker_id: string
+          created_at?: string
+          details?: string | null
+          id?: string
+          metadata?: Json | null
+          points: number
+          property_id?: string | null
+          type: string
+        }
+        Update: {
+          broker_id?: string
+          created_at?: string
+          details?: string | null
+          id?: string
+          metadata?: Json | null
+          points?: number
+          property_id?: string | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activities_broker_id_fkey"
+            columns: ["broker_id"]
+            isOneToOne: false
+            referencedRelation: "brokers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activities_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_cache_semantico: {
         Row: {
           categoria: string | null
@@ -393,6 +441,48 @@ export type Database = {
           },
         ]
       }
+      badges: {
+        Row: {
+          category: string
+          code: string
+          color: string
+          created_at: string
+          criteria: Json
+          description: string
+          icon: string
+          id: string
+          is_active: boolean
+          name: string
+          points_required: number | null
+        }
+        Insert: {
+          category?: string
+          code: string
+          color?: string
+          created_at?: string
+          criteria?: Json
+          description: string
+          icon?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          points_required?: number | null
+        }
+        Update: {
+          category?: string
+          code?: string
+          color?: string
+          created_at?: string
+          criteria?: Json
+          description?: string
+          icon?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          points_required?: number | null
+        }
+        Relationships: []
+      }
       bible_books: {
         Row: {
           abbreviation: string
@@ -495,6 +585,90 @@ export type Database = {
           id?: string
           language?: string
           name?: string
+        }
+        Relationships: []
+      }
+      broker_badges: {
+        Row: {
+          badge_id: string
+          broker_id: string
+          earned_at: string
+          id: string
+          notified: boolean
+        }
+        Insert: {
+          badge_id: string
+          broker_id: string
+          earned_at?: string
+          id?: string
+          notified?: boolean
+        }
+        Update: {
+          badge_id?: string
+          broker_id?: string
+          earned_at?: string
+          id?: string
+          notified?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "broker_badges_badge_id_fkey"
+            columns: ["badge_id"]
+            isOneToOne: false
+            referencedRelation: "badges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "broker_badges_broker_id_fkey"
+            columns: ["broker_id"]
+            isOneToOne: false
+            referencedRelation: "brokers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brokers: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          created_by: string | null
+          duo_partner_name: string | null
+          email: string | null
+          id: string
+          is_active: boolean
+          is_duo: boolean
+          name: string
+          phone: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          duo_partner_name?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          is_duo?: boolean
+          name: string
+          phone?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          duo_partner_name?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          is_duo?: boolean
+          name?: string
+          phone?: string | null
+          updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -792,6 +966,59 @@ export type Database = {
         }
         Relationships: []
       }
+      goals: {
+        Row: {
+          broker_id: string | null
+          created_at: string
+          created_by: string
+          current_amount: number
+          end_date: string
+          id: string
+          is_active: boolean
+          period: string
+          start_date: string
+          target_amount: number
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          broker_id?: string | null
+          created_at?: string
+          created_by: string
+          current_amount?: number
+          end_date: string
+          id?: string
+          is_active?: boolean
+          period?: string
+          start_date: string
+          target_amount: number
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          broker_id?: string | null
+          created_at?: string
+          created_by?: string
+          current_amount?: number
+          end_date?: string
+          id?: string
+          is_active?: boolean
+          period?: string
+          start_date?: string
+          target_amount?: number
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "goals_broker_id_fkey"
+            columns: ["broker_id"]
+            isOneToOne: false
+            referencedRelation: "brokers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       harpa_hymns: {
         Row: {
           author: string | null
@@ -1052,6 +1279,50 @@ export type Database = {
             columns: ["notificacao_id"]
             isOneToOne: false
             referencedRelation: "notificacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          broker_id: string | null
+          created_at: string
+          data: Json | null
+          id: string
+          is_read: boolean
+          message: string
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          broker_id?: string | null
+          created_at?: string
+          data?: Json | null
+          id?: string
+          is_read?: boolean
+          message: string
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          broker_id?: string | null
+          created_at?: string
+          data?: Json | null
+          id?: string
+          is_read?: boolean
+          message?: string
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_broker_id_fkey"
+            columns: ["broker_id"]
+            isOneToOne: false
+            referencedRelation: "brokers"
             referencedColumns: ["id"]
           },
         ]
@@ -1434,6 +1705,123 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      properties: {
+        Row: {
+          address: string
+          area: number
+          bathrooms: number | null
+          bedrooms: number | null
+          city: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          neighborhood: string
+          parking: number | null
+          price: number
+          state: string | null
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          address: string
+          area: number
+          bathrooms?: number | null
+          bedrooms?: number | null
+          city?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          neighborhood: string
+          parking?: number | null
+          price: number
+          state?: string | null
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string
+          area?: number
+          bathrooms?: number | null
+          bedrooms?: number | null
+          city?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          neighborhood?: string
+          parking?: number | null
+          price?: number
+          state?: string | null
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      property_visits: {
+        Row: {
+          broker_id: string
+          client_email: string | null
+          client_name: string | null
+          client_phone: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          property_id: string
+          result: string
+          updated_at: string
+          visit_date: string
+        }
+        Insert: {
+          broker_id: string
+          client_email?: string | null
+          client_name?: string | null
+          client_phone?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          property_id: string
+          result?: string
+          updated_at?: string
+          visit_date?: string
+        }
+        Update: {
+          broker_id?: string
+          client_email?: string | null
+          client_name?: string | null
+          client_phone?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          property_id?: string
+          result?: string
+          updated_at?: string
+          visit_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_visits_broker_id_fkey"
+            columns: ["broker_id"]
+            isOneToOne: false
+            referencedRelation: "brokers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_visits_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       reading_plan_days: {
         Row: {
@@ -1955,6 +2343,27 @@ export type Database = {
           },
         ]
       }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       usuarios: {
         Row: {
           aceite_privacidade: boolean | null
@@ -2230,11 +2639,19 @@ export type Database = {
         Returns: number
       }
       get_user_unidade_id: { Args: never; Returns: string }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       incrementar_hit_cache: {
         Args: { p_cache_id: string }
         Returns: undefined
       }
       is_master_of: { Args: { check_unidade_id: string }; Returns: boolean }
+      is_master_or_above: { Args: { _user_id: string }; Returns: boolean }
       is_super_user: { Args: never; Returns: boolean }
       normalizar_texto: { Args: { texto: string }; Returns: string }
       salvar_cache_versiculo: {
@@ -2264,7 +2681,13 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      app_role:
+        | "superuser"
+        | "master"
+        | "usuario"
+        | "admin"
+        | "gerente"
+        | "corretor"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2391,6 +2814,15 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: [
+        "superuser",
+        "master",
+        "usuario",
+        "admin",
+        "gerente",
+        "corretor",
+      ],
+    },
   },
 } as const
