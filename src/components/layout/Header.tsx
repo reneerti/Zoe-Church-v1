@@ -1,4 +1,4 @@
-import { Bell, Search, Menu } from "lucide-react";
+import { Bell, Search, Menu, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import logoZoe from '@/assets/logo-zoe.png';
@@ -53,6 +53,14 @@ export function Header({
               <Search className="h-5 w-5" />
             </Button>
           )}
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-9 w-9 text-primary"
+            onClick={() => navigate('/chat')}
+          >
+            <Sparkles className="h-5 w-5" />
+          </Button>
           {showNotifications && (
             <Button 
               variant="ghost" 
