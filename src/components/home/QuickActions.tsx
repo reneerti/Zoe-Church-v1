@@ -1,4 +1,4 @@
-import { BookOpen, Search, Music, MessageCircle } from "lucide-react";
+import { BookOpen, Search, Music } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
@@ -6,7 +6,6 @@ const actions = [
   { icon: BookOpen, label: "Continuar Leitura", path: "/biblia", color: "bg-bible/10 text-bible" },
   { icon: Search, label: "Buscar Versículo", path: "/biblia/busca", color: "bg-primary/10 text-primary" },
   { icon: Music, label: "Harpa Cristã", path: "/harpa", color: "bg-harpa/10 text-harpa" },
-  { icon: MessageCircle, label: "Chat IA", path: "/chat", color: "bg-accent/10 text-accent" },
 ];
 
 export function QuickActions() {
