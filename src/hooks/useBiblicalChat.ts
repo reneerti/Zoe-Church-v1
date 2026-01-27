@@ -4,6 +4,43 @@ import { supabase } from "@/integrations/supabase/client";
 
 type Message = { role: "user" | "assistant"; content: string };
 
+function compactChatAnswer(text: string) {
+  const cleaned = (text || "").replace(/\r\n/g, "\n").trim();
+  if (!cleaned) return "";
+
+  const parts = cleaned
+    .split(/\n{2,}/g)
+    .map(p => p.trim())
+    .filter(Boolean);
+
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const p of parts) {
+    const norm = p.toLowerCase().replace(/\s+/g, " ").trim();
+    if (!norm || seen.has(norm)) continue;
+    seen.add(norm);
+    out.push(p);
+    if (out.length >= 3) break;
+  }
+
+  let result = out.join("\n\n").trim();
+
+  const MAX_CHARS = 900;
+  if (result.length > MAX_CHARS) {
+    result = result
+      .slice(0, MAX_CHARS)
+      .replace(/\s+\S*$/, "")
+      .trim() +
+      "…";
+  }
+
+  if (!/[?？！]\s*$/.test(result)) {
+    result += "\n\nQuer que eu aprofunde em algum ponto específico?";
+  }
+
+  return result;
+}
+
 export function useBiblicalChat() {
   const { session } = useAuth();
   const [messages, setMessages] = useState<Message[]>([
@@ -30,8 +67,14 @@ export function useBiblicalChat() {
     inFlightRef.current = true;
 
     let assistantSoFar = "";
+    let lastChunk = "";
 
     const upsertAssistant = (nextChunk: string) => {
+      if (!nextChunk) return;
+      // Defensive de-dup: evita reprocessar o mesmo delta consecutivamente
+      if (nextChunk === lastChunk) return;
+      lastChunk = nextChunk;
+
       assistantSoFar += nextChunk;
       setMessages(prev => {
         const lastIndex = prev.length - 1;
@@ -127,6 +170,19 @@ export function useBiblicalChat() {
             if (content) upsertAssistant(content);
           } catch { /* ignore */ }
         }
+      }
+
+      // Compacta/deduplica a resposta final para evitar repetição e "paredões"
+      const compacted = compactChatAnswer(assistantSoFar);
+      if (compacted && compacted !== assistantSoFar) {
+        setMessages(prev => {
+          const lastIndex = prev.length - 1;
+          const last = prev[lastIndex];
+          if (!last || last.role !== "assistant") return prev;
+          const next = prev.slice();
+          next[lastIndex] = { ...last, content: compacted };
+          return next;
+        });
       }
     } catch (e) {
       console.error("Chat error:", e);

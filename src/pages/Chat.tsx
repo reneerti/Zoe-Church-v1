@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, memo } from "react";
+import { useState, useRef, useEffect } from "react";
 import { ChevronLeft, Send, Sparkles, Bot, User, RefreshCw, AlertCircle, Info } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -117,14 +117,24 @@ export default function Chat() {
 
         {/* Messages */}
         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-          {messages.map((message, index) => (
-            <div
-              key={index}
-              className={cn(
-                "flex gap-3 animate-fade-in",
-                message.role === "user" && "flex-row-reverse"
-              )}
-            >
+          {messages.map((message, index) => {
+            const isStreamingPlaceholder =
+              isLoading &&
+              index === messages.length - 1 &&
+              message.role === "assistant" &&
+              message.content.trim() === "";
+
+            // Evita renderizar um balão vazio enquanto o streaming está começando
+            if (isStreamingPlaceholder) return null;
+
+            return (
+              <div
+                key={index}
+                className={cn(
+                  "flex gap-3 animate-fade-in",
+                  message.role === "user" && "flex-row-reverse"
+                )}
+              >
               <div className={cn(
                 "w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0",
                 message.role === "assistant" 
@@ -150,10 +160,11 @@ export default function Chat() {
                   <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
                 )}
               </div>
-            </div>
-          ))}
+              </div>
+            );
+          })}
 
-          {isLoading && messages[messages.length - 1]?.role === "user" && (
+          {isLoading && messages[messages.length - 1]?.role === "assistant" && messages[messages.length - 1]?.content.trim() === "" && (
             <div className="flex gap-3 animate-fade-in">
               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
                 <Bot className="h-4 w-4 text-primary-foreground" />
