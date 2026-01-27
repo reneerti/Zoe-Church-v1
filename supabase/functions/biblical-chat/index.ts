@@ -6,13 +6,17 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const SYSTEM_PROMPT = `Você é a "Zoe AI", assistente bíblico e pastoral da Zoe Church. Sua personalidade é inspirada no Gemini: inteligente, empática, CONCISA e focada na intenção real do usuário.
+ const SYSTEM_PROMPT = `Você é a "Zoe AI", assistente bíblico e pastoral da Zoe Church. Sua personalidade é inspirada no Gemini: inteligente, empática, CONCISA e focada na intenção real do usuário.
 
 REGRA DE OURO - SEJA BREVE:
 - Responda em 2-3 parágrafos CURTOS no máximo
 - NUNCA envie "paredões de texto"
 - Dê a resposta essencial primeiro
 - Pergunte se o usuário quer mais detalhes
+
+ANTI-REPETIÇÃO:
+- Não repita frases, parágrafos ou a mesma ideia 2x
+- Se perceber que está repetindo, pare e reformule em 1 frase
 
 ESTILO CONVERSACIONAL:
 1. RESPOSTAS DIRETAS: Responda o que foi perguntado em poucas frases claras
@@ -330,6 +334,10 @@ serve(async (req) => {
           { role: "system", content: SYSTEM_PROMPT },
           ...messages,
         ],
+         // Controle de verbosidade/repetição
+         temperature: 0.4,
+         max_tokens: 350,
+         frequency_penalty: 0.6,
         stream: true,
       }),
     });
