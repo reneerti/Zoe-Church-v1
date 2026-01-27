@@ -24,15 +24,21 @@ export function useBiblicalChat() {
     setError(null);
 
     let assistantSoFar = "";
+    let assistantMessageAdded = false;
 
     const upsertAssistant = (nextChunk: string) => {
       assistantSoFar += nextChunk;
       setMessages(prev => {
-        const last = prev[prev.length - 1];
-        if (last?.role === "assistant" && prev.length > 1 && prev[prev.length - 2]?.role === "user") {
-          return prev.map((m, i) => (i === prev.length - 1 ? { ...m, content: assistantSoFar } : m));
+        if (assistantMessageAdded) {
+          // Update the last assistant message
+          return prev.map((m, i) => 
+            i === prev.length - 1 ? { ...m, content: assistantSoFar } : m
+          );
+        } else {
+          // Add new assistant message
+          assistantMessageAdded = true;
+          return [...prev, { role: "assistant", content: assistantSoFar }];
         }
-        return [...prev, { role: "assistant", content: assistantSoFar }];
       });
     };
 
