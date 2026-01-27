@@ -202,66 +202,49 @@
 }
 
 @layer components {
-  /* Module Cards - Modern Gradient Style (token-based) */
+  /* Module Cards - Clean System Style */
   .module-card {
-    @apply relative overflow-hidden rounded-2xl p-5 transition-all duration-300;
-    @apply hover:scale-[1.02] hover:shadow-xl active:scale-[0.98];
-    @apply shadow-md;
-    background: var(--gradient-hero);
+    @apply relative overflow-hidden rounded-xl p-4 transition-all duration-200;
+    @apply hover:bg-muted/80 active:scale-[0.98];
+    @apply bg-card border border-border;
   }
 
-  .module-card-bible {
-    background: linear-gradient(135deg, hsl(var(--bible)) 0%, hsl(var(--primary)) 100%) !important;
-    box-shadow: 0 10px 30px -12px hsl(var(--bible) / 0.55);
-  }
-
-  .module-card-planos {
-    background: linear-gradient(135deg, hsl(var(--planos)) 0%, hsl(var(--secondary)) 100%) !important;
-    box-shadow: 0 10px 30px -12px hsl(var(--planos) / 0.55);
-  }
-
-  .module-card-harpa {
-    background: linear-gradient(135deg, hsl(var(--harpa)) 0%, hsl(var(--secondary)) 100%) !important;
-    box-shadow: 0 10px 30px -12px hsl(var(--harpa) / 0.55);
-  }
-
-  .module-card-agenda {
-    background: linear-gradient(135deg, hsl(var(--agenda)) 0%, hsl(var(--convertidos)) 100%) !important;
-    box-shadow: 0 10px 30px -12px hsl(var(--agenda) / 0.55);
-  }
-
-  .module-card-devocional {
-    background: linear-gradient(135deg, hsl(var(--devocional)) 0%, hsl(var(--accent)) 100%) !important;
-    box-shadow: 0 10px 30px -12px hsl(var(--devocional) / 0.55);
-  }
-
-  .module-card-ofertas {
-    background: linear-gradient(135deg, hsl(var(--ofertas)) 0%, hsl(var(--videos)) 100%) !important;
-    box-shadow: 0 10px 30px -12px hsl(var(--ofertas) / 0.55);
-  }
-
-  .module-card-videos {
-    background: linear-gradient(135deg, hsl(var(--videos)) 0%, hsl(var(--devocional)) 100%) !important;
-    box-shadow: 0 10px 30px -12px hsl(var(--videos) / 0.55);
-  }
-
-  .module-card-lideranca {
-    background: linear-gradient(135deg, hsl(var(--lideranca)) 0%, hsl(var(--bible)) 100%) !important;
-    box-shadow: 0 10px 30px -12px hsl(var(--lideranca) / 0.55);
-  }
-
+  /* All module variants use system styling with subtle accent */
+  .module-card-bible,
+  .module-card-planos,
+  .module-card-harpa,
+  .module-card-agenda,
+  .module-card-devocional,
+  .module-card-ofertas,
+  .module-card-videos,
+  .module-card-lideranca,
   .module-card-convertidos {
-    background: linear-gradient(135deg, hsl(var(--convertidos)) 0%, hsl(var(--agenda)) 100%) !important;
-    box-shadow: 0 10px 30px -12px hsl(var(--convertidos) / 0.55);
+    @apply bg-card border border-border;
+    box-shadow: none;
   }
 
-  /* Force white text on all module cards */
-  .module-card,
-  .module-card h3,
-  .module-card p,
-  .module-card span,
-  .module-card svg {
-    color: hsl(var(--primary-foreground)) !important;
+  /* Icon backgrounds for each module */
+  .module-card-bible .module-icon { @apply bg-blue-100 text-blue-600; }
+  .module-card-planos .module-icon { @apply bg-violet-100 text-violet-600; }
+  .module-card-harpa .module-icon { @apply bg-purple-100 text-purple-600; }
+  .module-card-agenda .module-icon { @apply bg-teal-100 text-teal-600; }
+  .module-card-devocional .module-icon { @apply bg-orange-100 text-orange-600; }
+  .module-card-ofertas .module-icon { @apply bg-pink-100 text-pink-600; }
+  .module-card-videos .module-icon { @apply bg-red-100 text-red-600; }
+  .module-card-lideranca .module-icon { @apply bg-sky-100 text-sky-600; }
+  .module-card-convertidos .module-icon { @apply bg-emerald-100 text-emerald-600; }
+
+  /* Module card text uses foreground colors */
+  .module-card h3 {
+    @apply text-foreground font-semibold;
+  }
+  
+  .module-card p {
+    @apply text-muted-foreground;
+  }
+
+  .module-card .module-arrow {
+    @apply text-muted-foreground/50;
   }
 
   /* Glass Effect */
