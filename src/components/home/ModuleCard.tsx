@@ -27,30 +27,30 @@ export function ModuleCard({
     <button
       onClick={() => navigate(path)}
       className={cn(
-        "module-card w-full text-left opacity-0 animate-fade-in transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]",
+        "module-card w-full text-left opacity-0 animate-fade-in",
         `module-card-${variant}`,
         className
       )}
       style={{ animationDelay: `${delay}ms` }}
     >
-      <div className="flex items-center gap-4">
-        {/* Ícone com fundo translúcido */}
-        <div className="p-3 rounded-xl bg-white/20 backdrop-blur-sm flex-shrink-0">
-          <Icon className="h-6 w-6 text-white drop-shadow-md" />
+      <div className="flex items-center gap-3">
+        {/* Ícone com fundo colorido */}
+        <div className="module-icon p-2.5 rounded-xl flex-shrink-0">
+          <Icon className="h-5 w-5" />
         </div>
 
         {/* Textos */}
         <div className="flex-1 min-w-0">
-          <h3 className="font-bold text-lg leading-tight text-white drop-shadow-md">
+          <h3 className="font-semibold text-base leading-tight">
             {title}
           </h3>
-          <p className="text-sm text-white/90 mt-0.5 line-clamp-1">
+          <p className="text-sm mt-0.5 line-clamp-1">
             {description}
           </p>
         </div>
 
         {/* Seta indicadora */}
-        <ChevronRight className="h-5 w-5 text-white/70 flex-shrink-0" />
+        <ChevronRight className="h-5 w-5 module-arrow flex-shrink-0" />
       </div>
     </button>
   );
