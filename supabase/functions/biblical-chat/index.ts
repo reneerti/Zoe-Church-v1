@@ -253,7 +253,7 @@ serve(async (req) => {
       .eq("hash_pergunta", hashPergunta)
       .single();
 
-    if (cacheExato) {
+     if (cacheExato) {
       console.log("✅ Cache HIT (exato):", hashPergunta.substring(0, 16));
       
       // Incrementar hits
@@ -277,8 +277,8 @@ serve(async (req) => {
         });
       }
 
-      // Retornar resposta cacheada como stream simulado
-      return streamCachedResponse(cacheExato.resposta, corsHeaders);
+       // Retornar resposta cacheada (compactada/deduplicada) como stream simulado
+       return streamCachedResponse(compactarResposta(cacheExato.resposta), corsHeaders);
     }
 
     // 2. Tentar cache semântico (por embedding) - BUSCA SIMILAR
@@ -311,7 +311,7 @@ serve(async (req) => {
           });
         }
 
-        return streamCachedResponse(match.resposta, corsHeaders);
+         return streamCachedResponse(compactarResposta(match.resposta), corsHeaders);
       }
     }
 
@@ -461,4 +461,44 @@ function streamCachedResponse(resposta: string, headers: Record<string, string>)
   return new Response(stream, {
     headers: { ...headers, "Content-Type": "text/event-stream" },
   });
+}
+
+function compactarResposta(resposta: string) {
+  const cleaned = (resposta || "").replace(/\r\n/g, "\n").trim();
+  if (!cleaned) return "";
+
+  // Remove parágrafos repetidos e limita a resposta a poucos blocos (estilo conversacional)
+  const parts = cleaned
+    .split(/\n{2,}/g)
+    .map(p => p.trim())
+    .filter(Boolean);
+
+  const out: string[] = [];
+  let lastNorm = "";
+  for (const p of parts) {
+    const norm = p.toLowerCase().replace(/\s+/g, " ").trim();
+    if (norm && norm === lastNorm) continue;
+    out.push(p);
+    lastNorm = norm;
+    if (out.length >= 3) break;
+  }
+
+  let result = out.join("\n\n").trim();
+
+  // Hard cap para evitar "paredão" vindo do cache
+  const MAX_CHARS = 900;
+  if (result.length > MAX_CHARS) {
+    result = result
+      .slice(0, MAX_CHARS)
+      .replace(/\s+\S*$/, "")
+      .trim() +
+      "…";
+  }
+
+  // Sempre terminar em pergunta (fluxo conversacional)
+  if (!/[?？！]\s*$/.test(result)) {
+    result += "\n\nQuer que eu aprofunde em algum ponto específico?";
+  }
+
+  return result;
 }

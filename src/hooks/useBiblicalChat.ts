@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -14,31 +14,32 @@ export function useBiblicalChat() {
   ]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const inFlightRef = useRef(false);
 
   const sendMessage = useCallback(async (input: string) => {
-    if (!input.trim() || isLoading) return;
+    if (!input.trim()) return;
+    if (inFlightRef.current) return;
 
     const userMsg: Message = { role: "user", content: input };
-    setMessages(prev => [...prev, userMsg]);
+    const outgoingMessages = [...messages, userMsg];
+
+    // Add user + placeholder assistant (so we only ever update one assistant message)
+    setMessages(prev => [...prev, userMsg, { role: "assistant", content: "" }]);
     setIsLoading(true);
     setError(null);
+    inFlightRef.current = true;
 
     let assistantSoFar = "";
-    let assistantMessageAdded = false;
 
     const upsertAssistant = (nextChunk: string) => {
       assistantSoFar += nextChunk;
       setMessages(prev => {
-        if (assistantMessageAdded) {
-          // Update the last assistant message
-          return prev.map((m, i) => 
-            i === prev.length - 1 ? { ...m, content: assistantSoFar } : m
-          );
-        } else {
-          // Add new assistant message
-          assistantMessageAdded = true;
-          return [...prev, { role: "assistant", content: assistantSoFar }];
-        }
+        const lastIndex = prev.length - 1;
+        const last = prev[lastIndex];
+        if (!last || last.role !== "assistant") return prev;
+        const next = prev.slice();
+        next[lastIndex] = { ...last, content: assistantSoFar };
+        return next;
       });
     };
 
@@ -59,7 +60,7 @@ export function useBiblicalChat() {
       const resp = await fetch(functionUrl, {
         method: "POST",
         headers,
-        body: JSON.stringify({ messages: [...messages, userMsg] }),
+        body: JSON.stringify({ messages: outgoingMessages }),
       });
 
       if (!resp.ok) {
@@ -130,12 +131,13 @@ export function useBiblicalChat() {
     } catch (e) {
       console.error("Chat error:", e);
       setError(e instanceof Error ? e.message : "Erro desconhecido");
-      // Remove the last user message if there was an error
-      setMessages(prev => prev.slice(0, -1));
+      // Remove the last user + placeholder assistant if there was an error
+      setMessages(prev => (prev.length > 2 ? prev.slice(0, -2) : prev));
     } finally {
       setIsLoading(false);
+      inFlightRef.current = false;
     }
-  }, [messages, isLoading, session]);
+  }, [messages, session]);
 
   const clearMessages = useCallback(() => {
     setMessages([{
