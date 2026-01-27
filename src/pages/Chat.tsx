@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, memo } from "react";
 import { ChevronLeft, Send, Sparkles, Bot, User, RefreshCw, AlertCircle, Info } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { MarkdownRenderer } from "@/components/chat/MarkdownRenderer";
 import { ChatHistory } from "@/components/chat/ChatHistory";
+
 const suggestedQuestions = [
   "O que significa João 3:16?",
   "Como posso crescer na fé?",
