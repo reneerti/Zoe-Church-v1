@@ -215,7 +215,14 @@ export default function Chat() {
               placeholder="Digite sua pergunta bíblica..."
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSend()}
+              onKeyDown={(e) => {
+                if (e.key !== "Enter") return;
+                if (e.shiftKey) return;
+                if (e.repeat) return;
+                e.preventDefault();
+                e.stopPropagation();
+                handleSend();
+              }}
               className="flex-1 bg-muted/50 border-0"
               disabled={isLoading}
             />

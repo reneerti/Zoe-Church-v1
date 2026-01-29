@@ -1,8 +1,15 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
 type Message = { role: "user" | "assistant"; content: string };
+
+function normalizarEntrada(texto: string) {
+  return (texto || "")
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, " ");
+}
 
 function compactChatAnswer(text: string) {
   const cleaned = (text || "").replace(/\r\n/g, "\n").trim();
@@ -52,30 +59,77 @@ export function useBiblicalChat() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inFlightRef = useRef(false);
+  const activeRequestIdRef = useRef<string | null>(null);
+  const lastSendRef = useRef<{ hash: string; at: number } | null>(null);
+  const messagesRef = useRef<Message[]>(messages);
+
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
 
   const sendMessage = useCallback(async (input: string) => {
-    if (!input.trim()) return;
+    const trimmed = input.trim();
+    if (!trimmed) return;
+
+    // Anti-dupe defensivo: bloqueia o mesmo envio em janelas muito curtas
+    const hash = normalizarEntrada(trimmed);
+    const now = Date.now();
+    const last = lastSendRef.current;
+    if (last && last.hash === hash && now - last.at < 1500) return;
+    lastSendRef.current = { hash, at: now };
+
     if (inFlightRef.current) return;
 
-    const userMsg: Message = { role: "user", content: input };
-    const outgoingMessages = [...messages, userMsg];
+    const requestId = crypto.randomUUID();
+    activeRequestIdRef.current = requestId;
+
+    const userMsg: Message = { role: "user", content: trimmed };
+
+    // Usa sempre a versão mais recente das mensagens (evita closures/estado desatualizado)
+    const baseMessages = messagesRef.current.filter((m, i, arr) => {
+      const isLastEmptyAssistant =
+        i === arr.length - 1 && m.role === "assistant" && m.content.trim() === "";
+      return !isLastEmptyAssistant;
+    });
+
+    const outgoingMessages = [...baseMessages, userMsg];
 
     // Add user + placeholder assistant (so we only ever update one assistant message)
-    setMessages(prev => [...prev, userMsg, { role: "assistant", content: "" }]);
+    setMessages(prev => {
+      const next = prev.slice();
+
+      // Evita duplicar o balão do usuário caso algum evento dispare 2x
+      const lastMsg = next[next.length - 1];
+      if (!(lastMsg?.role === "user" && lastMsg.content === userMsg.content)) {
+        next.push(userMsg);
+      }
+
+      const tail = next[next.length - 1];
+      const hasEmptyAssistantTail = tail?.role === "assistant" && tail.content.trim() === "";
+      if (!hasEmptyAssistantTail) next.push({ role: "assistant", content: "" });
+
+      return next;
+    });
     setIsLoading(true);
     setError(null);
     inFlightRef.current = true;
 
     let assistantSoFar = "";
-    let lastChunk = "";
 
-    const upsertAssistant = (nextChunk: string) => {
-      if (!nextChunk) return;
-      // Defensive de-dup: evita reprocessar o mesmo delta consecutivamente
-      if (nextChunk === lastChunk) return;
-      lastChunk = nextChunk;
+    const upsertAssistant = (incoming: string) => {
+      if (activeRequestIdRef.current !== requestId) return;
+      if (!incoming) return;
 
-      assistantSoFar += nextChunk;
+      // Alguns providers enviam conteúdo cumulativo (não delta). Detecta e troca para "replace".
+      if (assistantSoFar && incoming.length > assistantSoFar.length && incoming.startsWith(assistantSoFar)) {
+        assistantSoFar = incoming;
+      } else if (assistantSoFar && assistantSoFar.endsWith(incoming)) {
+        // Evita anexar a mesma cauda novamente
+        return;
+      } else {
+        assistantSoFar += incoming;
+      }
+
       setMessages(prev => {
         const lastIndex = prev.length - 1;
         const last = prev[lastIndex];
@@ -93,6 +147,7 @@ export function useBiblicalChat() {
       const headers: Record<string, string> = {
         "Content-Type": "application/json",
         "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFsbGZoZW5saHNqa3VhdGN6YXRvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgxMDIyOTUsImV4cCI6MjA4MzY3ODI5NX0.kCFkQ4iB_8fjxi7IHhpyqUVP0y0aIIGX6xtVNIWpIpE",
+        "X-Zoe-Request-Id": requestId,
       };
 
       // Add auth header if user is logged in
@@ -186,14 +241,19 @@ export function useBiblicalChat() {
       }
     } catch (e) {
       console.error("Chat error:", e);
-      setError(e instanceof Error ? e.message : "Erro desconhecido");
+      if (activeRequestIdRef.current === requestId) {
+        setError(e instanceof Error ? e.message : "Erro desconhecido");
+      }
       // Remove the last user + placeholder assistant if there was an error
       setMessages(prev => (prev.length > 2 ? prev.slice(0, -2) : prev));
     } finally {
-      setIsLoading(false);
-      inFlightRef.current = false;
+      if (activeRequestIdRef.current === requestId) {
+        setIsLoading(false);
+        inFlightRef.current = false;
+        activeRequestIdRef.current = null;
+      }
     }
-  }, [messages, session]);
+  }, [session]);
 
   const clearMessages = useCallback(() => {
     setMessages([{
