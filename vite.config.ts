@@ -47,7 +47,8 @@ export default defineConfig(({ mode }) => ({
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
         runtimeCaching: [
           {
-            urlPattern: /^https:\/\/allfhenlhsjkuatczato\.supabase\.co\/.*/i,
+            // NÃO cachear Edge Functions (SSE/stream pode duplicar/bugar com SW)
+            urlPattern: /^https:\/\/allfhenlhsjkuatczato\.supabase\.co\/(rest|auth|storage)\/v1\/.*/i,
             handler: "NetworkFirst",
             options: {
               cacheName: "supabase-api-cache",
@@ -65,5 +66,7 @@ export default defineConfig(({ mode }) => ({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+    // Evita instâncias duplicadas do React (corrige erros tipo "Should have a queue")
+    dedupe: ["react", "react-dom", "react/jsx-runtime"],
   },
 }));
