@@ -155,11 +155,32 @@ export function useBiblicalChat() {
         headers["Authorization"] = `Bearer ${session.access_token}`;
       }
 
-      const resp = await fetch(functionUrl, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({ messages: outgoingMessages }),
-      });
+      // AbortController with 60s timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000);
+
+      let resp: Response;
+      try {
+        resp = await fetch(functionUrl, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ messages: outgoingMessages }),
+          signal: controller.signal,
+        });
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        // Handle network errors specifically
+        if (fetchError instanceof Error) {
+          if (fetchError.name === "AbortError") {
+            throw new Error("A requisição expirou. Tente novamente.");
+          }
+          if (fetchError.message.includes("Failed to fetch")) {
+            throw new Error("Erro de conexão. Verifique sua internet e tente novamente.");
+          }
+        }
+        throw fetchError;
+      }
+      clearTimeout(timeoutId);
 
       if (!resp.ok) {
         const errorData = await resp.json().catch(() => ({}));
