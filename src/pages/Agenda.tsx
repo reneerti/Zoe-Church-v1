@@ -8,12 +8,13 @@ import { cn } from "@/lib/utils";
 import { format, addDays, startOfWeek, isSameDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
-// Sample events
+// Eventos da Igreja
 const events = [
+  // FEVEREIRO 2025
   {
     id: 1,
-    title: "Culto de Celebração",
-    date: new Date(),
+    title: "Retorno dos Pastores e Família - Culto Ceia do Senhor",
+    date: new Date(2025, 1, 1), // 01/02
     time: "19:00",
     location: "Templo Principal",
     category: "culto",
@@ -21,39 +22,284 @@ const events = [
   },
   {
     id: 2,
-    title: "Escola Bíblica Dominical",
-    date: addDays(new Date(), 3),
-    time: "09:00",
-    location: "Salas de EBD",
-    category: "ensino",
-    color: "bg-agenda",
-  },
-  {
-    id: 3,
-    title: "Culto de Oração",
-    date: addDays(new Date(), 1),
-    time: "19:30",
+    title: "Culto de Celebração",
+    date: new Date(2025, 1, 2), // Domingo 02/02
+    time: "19:00",
     location: "Templo Principal",
     category: "culto",
     color: "bg-primary",
   },
   {
+    id: 3,
+    title: "Reunião de Pastores e Esposas",
+    date: new Date(2025, 1, 5), // 05/02
+    time: "17:00",
+    location: "Sala de Reuniões",
+    category: "reunião",
+    color: "bg-agenda",
+  },
+  {
     id: 4,
-    title: "Ensaio do Louvor",
-    date: addDays(new Date(), 2),
-    time: "20:00",
-    location: "Sala de Música",
-    category: "ensaio",
+    title: "CONEMAD Extraordinária - Barra do Garças",
+    date: new Date(2025, 1, 6), // 06/02
+    time: "08:00",
+    location: "Barra do Garças",
+    category: "evento",
     color: "bg-harpa",
   },
   {
     id: 5,
-    title: "Reunião de Células",
-    date: addDays(new Date(), 4),
-    time: "20:00",
-    location: "Casas",
-    category: "célula",
+    title: "CONEMAD Extraordinária - Barra do Garças",
+    date: new Date(2025, 1, 7), // 07/02
+    time: "08:00",
+    location: "Barra do Garças",
+    category: "evento",
+    color: "bg-harpa",
+  },
+  {
+    id: 6,
+    title: "Culto de Celebração",
+    date: new Date(2025, 1, 9), // Domingo 09/02
+    time: "19:00",
+    location: "Templo Principal",
+    category: "culto",
+    color: "bg-primary",
+  },
+  {
+    id: 7,
+    title: "Reação Conectados",
+    date: new Date(2025, 1, 14), // 14/02
+    time: "19:30",
+    location: "Templo Principal",
+    category: "jovens",
     color: "bg-convertidos",
+  },
+  {
+    id: 8,
+    title: "Culto de Celebração",
+    date: new Date(2025, 1, 16), // Domingo 16/02
+    time: "19:00",
+    location: "Templo Principal",
+    category: "culto",
+    color: "bg-primary",
+  },
+  {
+    id: 9,
+    title: "Culto de Celebração",
+    date: new Date(2025, 1, 23), // Domingo 23/02
+    time: "19:00",
+    location: "Templo Principal",
+    category: "culto",
+    color: "bg-primary",
+  },
+  {
+    id: 10,
+    title: "Oficina de Deus Teens",
+    date: new Date(2025, 1, 28), // 28/02
+    time: "19:00",
+    location: "Templo Principal",
+    category: "teens",
+    color: "bg-convertidos",
+  },
+  // MARÇO 2025
+  {
+    id: 11,
+    title: "Oficina de Deus Teens",
+    date: new Date(2025, 2, 1), // 01/03
+    time: "19:00",
+    location: "Templo Principal",
+    category: "teens",
+    color: "bg-convertidos",
+  },
+  {
+    id: 12,
+    title: "Culto de Celebração",
+    date: new Date(2025, 2, 2), // Domingo 02/03
+    time: "19:00",
+    location: "Templo Principal",
+    category: "culto",
+    color: "bg-primary",
+  },
+  {
+    id: 13,
+    title: "Reunião de Obreiros e Batismo",
+    date: new Date(2025, 2, 7), // 07/03
+    time: "19:00",
+    location: "Templo Principal",
+    category: "reunião",
+    color: "bg-agenda",
+  },
+  {
+    id: 14,
+    title: "Culto de Celebração",
+    date: new Date(2025, 2, 9), // Domingo 09/03
+    time: "19:00",
+    location: "Templo Principal",
+    category: "culto",
+    color: "bg-primary",
+  },
+  {
+    id: 15,
+    title: "Batom Fashion",
+    date: new Date(2025, 2, 14), // 14/03
+    time: "19:00",
+    location: "Templo Principal",
+    category: "mulheres",
+    color: "bg-pink-500",
+  },
+  {
+    id: 16,
+    title: "Culto de Celebração",
+    date: new Date(2025, 2, 16), // Domingo 16/03
+    time: "19:00",
+    location: "Templo Principal",
+    category: "culto",
+    color: "bg-primary",
+  },
+  {
+    id: 17,
+    title: "Culto de Celebração",
+    date: new Date(2025, 2, 23), // Domingo 23/03
+    time: "19:00",
+    location: "Templo Principal",
+    category: "culto",
+    color: "bg-primary",
+  },
+  {
+    id: 18,
+    title: "Culto de Celebração",
+    date: new Date(2025, 2, 30), // Domingo 30/03
+    time: "19:00",
+    location: "Templo Principal",
+    category: "culto",
+    color: "bg-primary",
+  },
+  // ABRIL 2025
+  {
+    id: 19,
+    title: "Connect 2026",
+    date: new Date(2025, 3, 3), // 03/04
+    time: "19:00",
+    location: "Templo Principal",
+    category: "evento",
+    color: "bg-harpa",
+  },
+  {
+    id: 20,
+    title: "Connect 2026",
+    date: new Date(2025, 3, 4), // 04/04
+    time: "19:00",
+    location: "Templo Principal",
+    category: "evento",
+    color: "bg-harpa",
+  },
+  {
+    id: 21,
+    title: "Ceia do Senhor",
+    date: new Date(2025, 3, 5), // 05/04
+    time: "19:00",
+    location: "Templo Principal",
+    category: "culto",
+    color: "bg-primary",
+  },
+  {
+    id: 22,
+    title: "Culto de Celebração",
+    date: new Date(2025, 3, 6), // Domingo 06/04
+    time: "19:00",
+    location: "Templo Principal",
+    category: "culto",
+    color: "bg-primary",
+  },
+  {
+    id: 23,
+    title: "Culto de Celebração",
+    date: new Date(2025, 3, 13), // Domingo 13/04
+    time: "19:00",
+    location: "Templo Principal",
+    category: "culto",
+    color: "bg-primary",
+  },
+  {
+    id: 24,
+    title: "CONAMAD Goiânia",
+    date: new Date(2025, 3, 14), // 14/04
+    time: "08:00",
+    location: "Goiânia - GO",
+    category: "evento",
+    color: "bg-harpa",
+  },
+  {
+    id: 25,
+    title: "CONAMAD Goiânia",
+    date: new Date(2025, 3, 15), // 15/04
+    time: "08:00",
+    location: "Goiânia - GO",
+    category: "evento",
+    color: "bg-harpa",
+  },
+  {
+    id: 26,
+    title: "CONAMAD Goiânia",
+    date: new Date(2025, 3, 16), // 16/04
+    time: "08:00",
+    location: "Goiânia - GO",
+    category: "evento",
+    color: "bg-harpa",
+  },
+  {
+    id: 27,
+    title: "CONAMAD Goiânia",
+    date: new Date(2025, 3, 17), // 17/04
+    time: "08:00",
+    location: "Goiânia - GO",
+    category: "evento",
+    color: "bg-harpa",
+  },
+  {
+    id: 28,
+    title: "Culto de Celebração",
+    date: new Date(2025, 3, 20), // Domingo 20/04
+    time: "19:00",
+    location: "Templo Principal",
+    category: "culto",
+    color: "bg-primary",
+  },
+  {
+    id: 29,
+    title: "Vau de Jaboque Sede",
+    date: new Date(2025, 3, 23), // 23/04
+    time: "19:00",
+    location: "Sede",
+    category: "evento",
+    color: "bg-agenda",
+  },
+  {
+    id: 30,
+    title: "Vau de Jaboque Sede",
+    date: new Date(2025, 3, 24), // 24/04
+    time: "19:00",
+    location: "Sede",
+    category: "evento",
+    color: "bg-agenda",
+  },
+  {
+    id: 31,
+    title: "Vau de Jaboque Sede",
+    date: new Date(2025, 3, 25), // 25/04
+    time: "19:00",
+    location: "Sede",
+    category: "evento",
+    color: "bg-agenda",
+  },
+  {
+    id: 32,
+    title: "Culto de Celebração",
+    date: new Date(2025, 3, 27), // Domingo 27/04
+    time: "19:00",
+    location: "Templo Principal",
+    category: "culto",
+    color: "bg-primary",
   },
 ];
 
