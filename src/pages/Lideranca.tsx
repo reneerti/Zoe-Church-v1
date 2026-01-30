@@ -1,37 +1,68 @@
-import { ChevronLeft, Phone, Mail, MessageCircle } from "lucide-react";
+import { useState, useEffect } from "react";
+import { ChevronLeft, Phone, Mail, MessageCircle, Pencil, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { cn } from "@/lib/utils";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { EditLeaderModal } from "@/components/lideranca/EditLeaderModal";
 
 type Leader = {
-  id: number;
-  name: string;
-  role: string;
-  photo: string;
-  phone: string;
-  email?: string;
-  whatsapp: string;
-  ministry?: string;
+  id: string;
+  nome: string;
+  cargo: string | null;
+  email: string;
+  telefone: string | null;
+  foto_url: string | null;
+  ordem: number | null;
+  is_principal: boolean | null;
 };
-
-const diretoria: Leader[] = [
-  { id: 1, name: "Pr. João Silva", role: "Pastor Presidente", photo: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&auto=format", phone: "(11) 99999-0001", email: "pr.joao@zoechurch.com.br", whatsapp: "5511999990001" },
-  { id: 2, name: "Pra. Maria Silva", role: "Pastora Presidente", photo: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&auto=format", phone: "(11) 99999-0002", email: "pra.maria@zoechurch.com.br", whatsapp: "5511999990002" },
-  { id: 3, name: "Pr. Carlos Santos", role: "Vice-Presidente", photo: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format", phone: "(11) 99999-0003", email: "pr.carlos@zoechurch.com.br", whatsapp: "5511999990003" },
-];
-
-const lideresMinisterio: Leader[] = [
-  { id: 4, name: "Pedro Oliveira", role: "Líder de Louvor", ministry: "Ministério de Louvor", photo: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400&auto=format", phone: "(11) 99999-0004", whatsapp: "5511999990004" },
-  { id: 5, name: "Ana Costa", role: "Líder de Jovens", ministry: "Ministério de Jovens", photo: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&auto=format", phone: "(11) 99999-0005", whatsapp: "5511999990005" },
-  { id: 6, name: "Lucas Ferreira", role: "Líder de Mídia", ministry: "Ministério de Mídia", photo: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&auto=format", phone: "(11) 99999-0006", whatsapp: "5511999990006" },
-  { id: 7, name: "Juliana Mendes", role: "Líder Infantil", ministry: "Ministério Infantil", photo: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format", phone: "(11) 99999-0007", whatsapp: "5511999990007" },
-];
 
 export default function Lideranca() {
   const navigate = useNavigate();
+  const { session, isMaster } = useAuth();
+  const [leaders, setLeaders] = useState<Leader[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editingLeader, setEditingLeader] = useState<Leader | null>(null);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+
+  const fetchLeaders = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("masters")
+        .select("id, nome, cargo, email, telefone, foto_url, ordem, is_principal")
+        .eq("is_active", true)
+        .order("ordem", { ascending: true, nullsFirst: false })
+        .order("nome", { ascending: true });
+
+      if (error) throw error;
+      setLeaders(data || []);
+    } catch (error) {
+      console.error("Error fetching leaders:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLeaders();
+  }, []);
+
+  const handleEdit = (leader: Leader) => {
+    setEditingLeader(leader);
+    setEditModalOpen(true);
+  };
+
+  const formatWhatsApp = (phone: string | null) => {
+    if (!phone) return "";
+    // Remove all non-numeric characters
+    return phone.replace(/\D/g, "");
+  };
+
+  const canEdit = isMaster;
 
   return (
     <>
@@ -47,51 +78,136 @@ export default function Lideranca() {
       </header>
 
       <PageContainer>
-        <Tabs defaultValue="diretoria" className="w-full pt-4">
-          <TabsList className="grid w-full grid-cols-2 mb-4">
-            <TabsTrigger value="diretoria">Diretoria</TabsTrigger>
-            <TabsTrigger value="ministerios">Ministérios</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="diretoria" className="mt-0 space-y-4">
-            {diretoria.map((leader, index) => (
-              <LeaderCard key={leader.id} leader={leader} delay={index * 50} />
-            ))}
-          </TabsContent>
-
-          <TabsContent value="ministerios" className="mt-0 space-y-4">
-            {lideresMinisterio.map((leader, index) => (
-              <LeaderCard key={leader.id} leader={leader} delay={index * 50} />
-            ))}
-          </TabsContent>
-        </Tabs>
+        <div className="pt-4 space-y-4">
+          {loading ? (
+            // Loading skeleton
+            Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="p-4 rounded-2xl bg-card border border-border">
+                <div className="flex gap-4">
+                  <Skeleton className="w-20 h-20 rounded-xl flex-shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-5 w-32" />
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-8 w-full mt-2" />
+                  </div>
+                </div>
+              </div>
+            ))
+          ) : leaders.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <User className="h-12 w-12 mx-auto mb-3 opacity-50" />
+              <p>Nenhum líder cadastrado</p>
+            </div>
+          ) : (
+            leaders.map((leader, index) => (
+              <LeaderCard 
+                key={leader.id} 
+                leader={leader} 
+                delay={index * 50}
+                canEdit={canEdit}
+                onEdit={() => handleEdit(leader)}
+              />
+            ))
+          )}
+        </div>
       </PageContainer>
 
       <BottomNav />
+
+      {/* Edit Modal */}
+      <EditLeaderModal
+        leader={editingLeader}
+        open={editModalOpen}
+        onOpenChange={setEditModalOpen}
+        onSave={fetchLeaders}
+      />
     </>
   );
 }
 
-function LeaderCard({ leader, delay }: { leader: Leader; delay: number }) {
+function LeaderCard({ 
+  leader, 
+  delay,
+  canEdit,
+  onEdit
+}: { 
+  leader: Leader; 
+  delay: number;
+  canEdit: boolean;
+  onEdit: () => void;
+}) {
+  const whatsappNumber = leader.telefone?.replace(/\D/g, "") || "";
+  
   return (
-    <div className={cn("p-4 rounded-2xl bg-card border border-border transition-all duration-200 hover:shadow-md opacity-0 animate-fade-in")} style={{ animationDelay: `${delay}ms` }}>
+    <div 
+      className={cn(
+        "p-4 rounded-2xl bg-card border border-border transition-all duration-200 hover:shadow-md opacity-0 animate-fade-in"
+      )} 
+      style={{ animationDelay: `${delay}ms` }}
+    >
       <div className="flex gap-4">
-        <div className="w-20 h-20 rounded-xl overflow-hidden flex-shrink-0 bg-muted">
-          <img src={leader.photo} alt={leader.name} className="w-full h-full object-cover" />
+        <div className="w-20 h-20 rounded-xl overflow-hidden flex-shrink-0 bg-muted flex items-center justify-center">
+          {leader.foto_url ? (
+            <img 
+              src={leader.foto_url} 
+              alt={leader.nome} 
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+                e.currentTarget.parentElement?.querySelector('.fallback')?.classList.remove('hidden');
+              }}
+            />
+          ) : null}
+          <User className={cn("h-8 w-8 text-muted-foreground fallback", leader.foto_url && "hidden")} />
         </div>
+        
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold">{leader.name}</h3>
-          <p className="text-sm text-primary">{leader.role}</p>
-          {leader.ministry && <p className="text-xs text-muted-foreground">{leader.ministry}</p>}
-          <div className="flex gap-2 mt-3">
-            <Button size="sm" variant="outline" className="h-8 px-3" onClick={() => window.open(`https://wa.me/${leader.whatsapp}`, "_blank")}>
-              <MessageCircle className="h-4 w-4 mr-1 text-convertidos" />WhatsApp
-            </Button>
-            <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => window.open(`tel:${leader.phone}`, "_self")}>
-              <Phone className="h-4 w-4" />
-            </Button>
+          <div className="flex items-start justify-between gap-2">
+            <div>
+              <h3 className="font-semibold">{leader.nome}</h3>
+              {leader.cargo && <p className="text-sm text-primary">{leader.cargo}</p>}
+            </div>
+            {canEdit && (
+              <Button 
+                size="icon" 
+                variant="ghost" 
+                className="h-8 w-8 flex-shrink-0"
+                onClick={onEdit}
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+          
+          <div className="flex flex-wrap gap-2 mt-3">
+            {whatsappNumber && (
+              <Button 
+                size="sm" 
+                variant="outline" 
+                className="h-8 px-3" 
+                onClick={() => window.open(`https://wa.me/55${whatsappNumber}`, "_blank")}
+              >
+                <MessageCircle className="h-4 w-4 mr-1 text-convertidos" />
+                WhatsApp
+              </Button>
+            )}
+            {leader.telefone && (
+              <Button 
+                size="icon" 
+                variant="outline" 
+                className="h-8 w-8" 
+                onClick={() => window.open(`tel:${leader.telefone}`, "_self")}
+              >
+                <Phone className="h-4 w-4" />
+              </Button>
+            )}
             {leader.email && (
-              <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => window.open(`mailto:${leader.email}`, "_self")}>
+              <Button 
+                size="icon" 
+                variant="outline" 
+                className="h-8 w-8" 
+                onClick={() => window.open(`mailto:${leader.email}`, "_self")}
+              >
                 <Mail className="h-4 w-4" />
               </Button>
             )}
