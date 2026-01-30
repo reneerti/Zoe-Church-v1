@@ -58,10 +58,16 @@ export function useBiblicalChat() {
   ]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Refs para controle de concorrência
   const inFlightRef = useRef(false);
   const activeRequestIdRef = useRef<string | null>(null);
   const lastSendRef = useRef<{ hash: string; at: number } | null>(null);
   const messagesRef = useRef<Message[]>(messages);
+  
+  // Rastreamento de chunks para evitar duplicação
+  const processedChunksRef = useRef<Set<string>>(new Set());
+  const fullResponseRef = useRef<string>("");
 
   useEffect(() => {
     messagesRef.current = messages;
@@ -71,21 +77,25 @@ export function useBiblicalChat() {
     const trimmed = input.trim();
     if (!trimmed) return;
 
-    // Anti-dupe defensivo: bloqueia o mesmo envio em janelas muito curtas
+    // Anti-dupe: bloqueia mesmo envio em janela curta
     const hash = normalizarEntrada(trimmed);
     const now = Date.now();
     const last = lastSendRef.current;
-    if (last && last.hash === hash && now - last.at < 1500) return;
+    if (last && last.hash === hash && now - last.at < 2000) return;
     lastSendRef.current = { hash, at: now };
 
+    // Bloqueia se já há requisição em andamento
     if (inFlightRef.current) return;
 
+    // Novo request ID e reset de estado
     const requestId = crypto.randomUUID();
     activeRequestIdRef.current = requestId;
+    processedChunksRef.current = new Set();
+    fullResponseRef.current = "";
 
     const userMsg: Message = { role: "user", content: trimmed };
 
-    // Usa sempre a versão mais recente das mensagens (evita closures/estado desatualizado)
+    // Mensagens para enviar (sem placeholder vazio)
     const baseMessages = messagesRef.current.filter((m, i, arr) => {
       const isLastEmptyAssistant =
         i === arr.length - 1 && m.role === "assistant" && m.content.trim() === "";
@@ -94,54 +104,74 @@ export function useBiblicalChat() {
 
     const outgoingMessages = [...baseMessages, userMsg];
 
-    // Add user + placeholder assistant (so we only ever update one assistant message)
+    // Adiciona user + placeholder assistant
     setMessages(prev => {
-      const next = prev.slice();
-
-      // Evita duplicar o balão do usuário caso algum evento dispare 2x
+      const next = [...prev];
+      
+      // Evita duplicar mensagem do usuário
       const lastMsg = next[next.length - 1];
       if (!(lastMsg?.role === "user" && lastMsg.content === userMsg.content)) {
         next.push(userMsg);
       }
 
+      // Adiciona placeholder do assistant se não existir
       const tail = next[next.length - 1];
-      const hasEmptyAssistantTail = tail?.role === "assistant" && tail.content.trim() === "";
-      if (!hasEmptyAssistantTail) next.push({ role: "assistant", content: "" });
+      if (!(tail?.role === "assistant" && tail.content.trim() === "")) {
+        next.push({ role: "assistant", content: "" });
+      }
 
       return next;
     });
+    
     setIsLoading(true);
     setError(null);
     inFlightRef.current = true;
 
-    let assistantSoFar = "";
-
-    const upsertAssistant = (incoming: string) => {
+    // Função para atualizar resposta do assistant (anti-duplicação)
+    const updateAssistantResponse = (newContent: string) => {
       if (activeRequestIdRef.current !== requestId) return;
-      if (!incoming) return;
+      if (!newContent) return;
 
-      // Alguns providers enviam conteúdo cumulativo (não delta). Detecta e troca para "replace".
-      if (assistantSoFar && incoming.length > assistantSoFar.length && incoming.startsWith(assistantSoFar)) {
-        assistantSoFar = incoming;
-      } else if (assistantSoFar && assistantSoFar.endsWith(incoming)) {
-        // Evita anexar a mesma cauda novamente
+      // Cria hash único para detectar chunks duplicados
+      const chunkHash = `${fullResponseRef.current.length}:${newContent}`;
+      if (processedChunksRef.current.has(chunkHash)) {
+        console.log("[ZOE-AI] Chunk duplicado ignorado:", chunkHash);
         return;
-      } else {
-        assistantSoFar += incoming;
+      }
+      processedChunksRef.current.add(chunkHash);
+
+      // Verifica se o chunk já está no final da resposta (repetição)
+      if (fullResponseRef.current.endsWith(newContent)) {
+        console.log("[ZOE-AI] Conteúdo repetido no final, ignorando");
+        return;
       }
 
+      // Verifica se é conteúdo cumulativo (provider envia tudo de novo)
+      if (newContent.startsWith(fullResponseRef.current) && newContent.length > fullResponseRef.current.length) {
+        // É cumulativo - substitui tudo
+        fullResponseRef.current = newContent;
+      } else {
+        // É delta - anexa
+        fullResponseRef.current += newContent;
+      }
+
+      const currentResponse = fullResponseRef.current;
+      
       setMessages(prev => {
         const lastIndex = prev.length - 1;
         const last = prev[lastIndex];
         if (!last || last.role !== "assistant") return prev;
-        const next = prev.slice();
-        next[lastIndex] = { ...last, content: assistantSoFar };
+        
+        // Só atualiza se o conteúdo for diferente
+        if (last.content === currentResponse) return prev;
+        
+        const next = [...prev];
+        next[lastIndex] = { ...last, content: currentResponse };
         return next;
       });
     };
 
     try {
-      // Use Supabase functions URL directly
       const functionUrl = `https://allfhenlhsjkuatczato.supabase.co/functions/v1/biblical-chat`;
       
       const headers: Record<string, string> = {
@@ -150,12 +180,10 @@ export function useBiblicalChat() {
         "X-Zoe-Request-Id": requestId,
       };
 
-      // Add auth header if user is logged in
       if (session?.access_token) {
         headers["Authorization"] = `Bearer ${session.access_token}`;
       }
 
-      // AbortController with 60s timeout
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 60000);
 
@@ -169,7 +197,6 @@ export function useBiblicalChat() {
         });
       } catch (fetchError) {
         clearTimeout(timeoutId);
-        // Handle network errors specifically
         if (fetchError instanceof Error) {
           if (fetchError.name === "AbortError") {
             throw new Error("A requisição expirou. Tente novamente.");
@@ -198,13 +225,14 @@ export function useBiblicalChat() {
       const reader = resp.body.getReader();
       const decoder = new TextDecoder();
       let textBuffer = "";
-      let streamDone = false;
 
-      while (!streamDone) {
+      while (true) {
         const { done, value } = await reader.read();
         if (done) break;
+        
         textBuffer += decoder.decode(value, { stream: true });
 
+        // Processa linhas completas
         let newlineIndex: number;
         while ((newlineIndex = textBuffer.indexOf("\n")) !== -1) {
           let line = textBuffer.slice(0, newlineIndex);
@@ -215,23 +243,23 @@ export function useBiblicalChat() {
           if (!line.startsWith("data: ")) continue;
 
           const jsonStr = line.slice(6).trim();
-          if (jsonStr === "[DONE]") {
-            streamDone = true;
-            break;
-          }
+          if (jsonStr === "[DONE]") break;
 
           try {
             const parsed = JSON.parse(jsonStr);
-            const content = parsed.choices?.[0]?.delta?.content as string | undefined;
-            if (content) upsertAssistant(content);
+            const content = parsed.choices?.[0]?.delta?.content;
+            if (typeof content === "string" && content) {
+              updateAssistantResponse(content);
+            }
           } catch {
+            // JSON incompleto, volta pro buffer
             textBuffer = line + "\n" + textBuffer;
             break;
           }
         }
       }
 
-      // Final flush
+      // Processa resto do buffer
       if (textBuffer.trim()) {
         for (let raw of textBuffer.split("\n")) {
           if (!raw) continue;
@@ -242,36 +270,40 @@ export function useBiblicalChat() {
           if (jsonStr === "[DONE]") continue;
           try {
             const parsed = JSON.parse(jsonStr);
-            const content = parsed.choices?.[0]?.delta?.content as string | undefined;
-            if (content) upsertAssistant(content);
+            const content = parsed.choices?.[0]?.delta?.content;
+            if (typeof content === "string" && content) {
+              updateAssistantResponse(content);
+            }
           } catch { /* ignore */ }
         }
       }
 
-      // Compacta/deduplica a resposta final para evitar repetição e "paredões"
-      const compacted = compactChatAnswer(assistantSoFar);
-      if (compacted && compacted !== assistantSoFar) {
+      // Compacta resposta final (remove parágrafos duplicados)
+      const finalResponse = fullResponseRef.current;
+      const compacted = compactChatAnswer(finalResponse);
+      if (compacted && compacted !== finalResponse) {
         setMessages(prev => {
           const lastIndex = prev.length - 1;
           const last = prev[lastIndex];
           if (!last || last.role !== "assistant") return prev;
-          const next = prev.slice();
+          const next = [...prev];
           next[lastIndex] = { ...last, content: compacted };
           return next;
         });
       }
     } catch (e) {
-      console.error("Chat error:", e);
+      console.error("[ZOE-AI] Error:", e);
       if (activeRequestIdRef.current === requestId) {
         setError(e instanceof Error ? e.message : "Erro desconhecido");
+        // Remove user + placeholder em caso de erro
+        setMessages(prev => (prev.length > 2 ? prev.slice(0, -2) : prev));
       }
-      // Remove the last user + placeholder assistant if there was an error
-      setMessages(prev => (prev.length > 2 ? prev.slice(0, -2) : prev));
     } finally {
       if (activeRequestIdRef.current === requestId) {
         setIsLoading(false);
         inFlightRef.current = false;
         activeRequestIdRef.current = null;
+        processedChunksRef.current = new Set();
       }
     }
   }, [session]);
@@ -282,6 +314,8 @@ export function useBiblicalChat() {
       content: "Olá! 👋 Sou o **Zoe AI**, assistente bíblico. Como posso ajudá-lo hoje? Você pode me perguntar sobre *versículos*, __contexto histórico__, ou pedir orientação espiritual baseada na Palavra de Deus.",
     }]);
     setError(null);
+    fullResponseRef.current = "";
+    processedChunksRef.current = new Set();
   }, []);
 
   return { messages, isLoading, error, sendMessage, clearMessages, setMessages };
