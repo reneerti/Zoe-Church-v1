@@ -152,35 +152,60 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
-    // Set up auth state listener FIRST
+    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('[AuthContext] Auth state changed:', event);
         setSession(session);
         setUser(session?.user ?? null);
 
         if (session?.user?.email) {
-          // Usar setTimeout para evitar deadlock com Supabase
-          setTimeout(async () => {
-            const userProfile = await fetchUserProfile(session.user.id, session.user.email!);
-            setProfile(userProfile);
-            setLoading(false);
-          }, 0);
+          const userProfile = await fetchUserProfile(session.user.id, session.user.email);
+          setProfile(userProfile);
+
+          // Cache profile for offline access
+          if (userProfile) {
+            const { UserProfileCache } = await import('@/lib/offlineStorage');
+            await UserProfileCache.cacheProfile(userProfile);
+          }
         } else {
           setProfile(null);
-          setLoading(false);
+          // Clear cached profile on logout
+          const { UserProfileCache } = await import('@/lib/offlineStorage');
+          await UserProfileCache.clearProfile();
         }
+
+        setLoading(false);
       }
     );
 
-    // THEN check for existing session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+    // Check for existing session
+    supabase.auth.getSession().then(async ({ data: { session }, error }) => {
+      if (error) {
+        console.error('[AuthContext] Error getting session:', error);
+        // Try to load cached profile if offline
+        const { UserProfileCache } = await import('@/lib/offlineStorage');
+        const cachedProfile = await UserProfileCache.getCachedProfile();
+        if (cachedProfile) {
+          console.log('[AuthContext] Using cached profile (offline)');
+          setProfile(cachedProfile);
+        }
+      }
+
       setSession(session);
       setUser(session?.user ?? null);
 
       if (session?.user?.email) {
         const userProfile = await fetchUserProfile(session.user.id, session.user.email);
         setProfile(userProfile);
+
+        // Cache profile
+        if (userProfile) {
+          const { UserProfileCache } = await import('@/lib/offlineStorage');
+          await UserProfileCache.cacheProfile(userProfile);
+        }
       }
+
       setLoading(false);
     });
 
@@ -222,6 +247,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signOut = async () => {
     await supabase.auth.signOut();
     setProfile(null);
+
+    // Clear all offline data on logout
+    const { OfflineStorage, UserProfileCache } = await import('@/lib/offlineStorage');
+    await UserProfileCache.clearProfile();
+    await OfflineStorage.clearAllMutations();
   };
 
   // Computed values
@@ -234,11 +264,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const unidadeNome = profile?.unidadeNome ?? null;
 
   return (
-    <AuthContext.Provider 
-      value={{ 
-        user, 
-        session, 
-        loading, 
+    <AuthContext.Provider
+      value={{
+        user,
+        session,
+        loading,
         profile,
         role,
         isSuperUser,
@@ -247,9 +277,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         unidadeId,
         unidadeSlug,
         unidadeNome,
-        signUp, 
-        signIn, 
-        signInWithGoogle, 
+        signUp,
+        signIn,
+        signInWithGoogle,
         signOut,
         refreshProfile,
       }}

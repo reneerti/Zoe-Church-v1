@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ChevronLeft, Phone, Mail, MessageCircle, Pencil, User } from "lucide-react";
+import { ChevronLeft, Phone, Mail, MessageCircle, Pencil, User, Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { PageContainer } from "@/components/layout/PageContainer";
@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { EditLeaderModal } from "@/components/lideranca/EditLeaderModal";
+import { AddLeaderModal } from "@/components/lideranca/AddLeaderModal";
 
 type Leader = {
   id: string;
@@ -23,11 +24,12 @@ type Leader = {
 
 export default function Lideranca() {
   const navigate = useNavigate();
-  const { session, isMaster } = useAuth();
+  const { session, isMaster, isSuperUser } = useAuth();
   const [leaders, setLeaders] = useState<Leader[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingLeader, setEditingLeader] = useState<Leader | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
+  const [addModalOpen, setAddModalOpen] = useState(false);
 
   const fetchLeaders = async () => {
     try {
@@ -62,7 +64,7 @@ export default function Lideranca() {
     return phone.replace(/\D/g, "");
   };
 
-  const canEdit = isMaster;
+  const canEdit = isMaster || isSuperUser;
 
   return (
     <>
@@ -74,6 +76,17 @@ export default function Lideranca() {
             </Button>
             <h1 className="font-bold text-lg">Liderança</h1>
           </div>
+          {canEdit && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9"
+              onClick={() => setAddModalOpen(true)}
+              title="Adicionar líder"
+            >
+              <Plus className="h-5 w-5" />
+            </Button>
+          )}
         </div>
       </header>
 
@@ -100,9 +113,9 @@ export default function Lideranca() {
             </div>
           ) : (
             leaders.map((leader, index) => (
-              <LeaderCard 
-                key={leader.id} 
-                leader={leader} 
+              <LeaderCard
+                key={leader.id}
+                leader={leader}
                 delay={index * 50}
                 canEdit={canEdit}
                 onEdit={() => handleEdit(leader)}
@@ -113,6 +126,13 @@ export default function Lideranca() {
       </PageContainer>
 
       <BottomNav />
+
+      {/* Add Modal */}
+      <AddLeaderModal
+        open={addModalOpen}
+        onOpenChange={setAddModalOpen}
+        onSave={fetchLeaders}
+      />
 
       {/* Edit Modal */}
       <EditLeaderModal
@@ -125,32 +145,32 @@ export default function Lideranca() {
   );
 }
 
-function LeaderCard({ 
-  leader, 
+function LeaderCard({
+  leader,
   delay,
   canEdit,
   onEdit
-}: { 
-  leader: Leader; 
+}: {
+  leader: Leader;
   delay: number;
   canEdit: boolean;
   onEdit: () => void;
 }) {
   const whatsappNumber = leader.telefone?.replace(/\D/g, "") || "";
-  
+
   return (
-    <div 
+    <div
       className={cn(
         "p-4 rounded-2xl bg-card border border-border transition-all duration-200 hover:shadow-md opacity-0 animate-fade-in"
-      )} 
+      )}
       style={{ animationDelay: `${delay}ms` }}
     >
       <div className="flex gap-4">
         <div className="w-20 h-20 rounded-xl overflow-hidden flex-shrink-0 bg-muted flex items-center justify-center">
           {leader.foto_url ? (
-            <img 
-              src={leader.foto_url} 
-              alt={leader.nome} 
+            <img
+              src={leader.foto_url}
+              alt={leader.nome}
               className="w-full h-full object-cover"
               onError={(e) => {
                 e.currentTarget.style.display = 'none';
@@ -160,7 +180,7 @@ function LeaderCard({
           ) : null}
           <User className={cn("h-8 w-8 text-muted-foreground fallback", leader.foto_url && "hidden")} />
         </div>
-        
+
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
             <div>
@@ -168,9 +188,9 @@ function LeaderCard({
               {leader.cargo && <p className="text-sm text-primary">{leader.cargo}</p>}
             </div>
             {canEdit && (
-              <Button 
-                size="icon" 
-                variant="ghost" 
+              <Button
+                size="icon"
+                variant="ghost"
                 className="h-8 w-8 flex-shrink-0"
                 onClick={onEdit}
               >
@@ -178,13 +198,13 @@ function LeaderCard({
               </Button>
             )}
           </div>
-          
+
           <div className="flex flex-wrap gap-2 mt-3">
             {whatsappNumber && (
-              <Button 
-                size="sm" 
-                variant="outline" 
-                className="h-8 px-3" 
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 px-3"
                 onClick={() => window.open(`https://wa.me/55${whatsappNumber}`, "_blank")}
               >
                 <MessageCircle className="h-4 w-4 mr-1 text-convertidos" />
@@ -192,20 +212,20 @@ function LeaderCard({
               </Button>
             )}
             {leader.telefone && (
-              <Button 
-                size="icon" 
-                variant="outline" 
-                className="h-8 w-8" 
+              <Button
+                size="icon"
+                variant="outline"
+                className="h-8 w-8"
                 onClick={() => window.open(`tel:${leader.telefone}`, "_self")}
               >
                 <Phone className="h-4 w-4" />
               </Button>
             )}
             {leader.email && (
-              <Button 
-                size="icon" 
-                variant="outline" 
-                className="h-8 w-8" 
+              <Button
+                size="icon"
+                variant="outline"
+                className="h-8 w-8"
                 onClick={() => window.open(`mailto:${leader.email}`, "_self")}
               >
                 <Mail className="h-4 w-4" />

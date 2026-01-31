@@ -62,31 +62,23 @@ export default function Chat() {
       <header className="sticky top-0 z-40 glass safe-area-inset-top">
         <div className="flex items-center justify-between h-14 px-4 max-w-lg mx-auto">
           <div className="flex items-center gap-2">
-            <Button 
-              variant="ghost" 
-              size="icon" 
+            <Button
+              variant="ghost"
+              size="icon"
               className="h-9 w-9"
               onClick={() => navigate(-1)}
             >
               <ChevronLeft className="h-5 w-5" />
             </Button>
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
-                <Sparkles className="h-4 w-4 text-primary-foreground" />
-              </div>
-              <div>
-                <h1 className="font-bold text-sm leading-none">Zoe AI</h1>
-                <p className="text-xs text-muted-foreground">Assistente Bíblico</p>
-              </div>
-            </div>
+            <img src="/zoe-logo-small.png" alt="Zoe" className="h-6 w-auto" />
           </div>
-          <ChatHistory 
-            onSelectHistory={handleLoadHistory} 
-            currentMessages={messages} 
+          <ChatHistory
+            onSelectHistory={handleLoadHistory}
+            currentMessages={messages}
           />
-          <Button 
-            variant="ghost" 
-            size="icon" 
+          <Button
+            variant="ghost"
+            size="icon"
             className="h-9 w-9"
             onClick={clearMessages}
             title="Nova conversa"
@@ -103,7 +95,7 @@ export default function Chat() {
             <Alert>
               <Info className="h-4 w-4" />
               <AlertDescription className="text-sm">
-                <button 
+                <button
                   onClick={() => navigate("/auth")}
                   className="text-primary font-medium hover:underline"
                 >
@@ -135,31 +127,31 @@ export default function Chat() {
                   message.role === "user" && "flex-row-reverse"
                 )}
               >
-              <div className={cn(
-                "w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0",
-                message.role === "assistant" 
-                  ? "bg-gradient-to-br from-primary to-secondary" 
-                  : "bg-muted"
-              )}>
-                {message.role === "assistant" ? (
-                  <Bot className="h-4 w-4 text-primary-foreground" />
-                ) : (
-                  <User className="h-4 w-4 text-muted-foreground" />
-                )}
-              </div>
-              
-              <div className={cn(
-                "max-w-[80%] p-3 rounded-2xl",
-                message.role === "assistant" 
-                  ? "bg-muted rounded-tl-sm" 
-                  : "bg-primary text-primary-foreground rounded-tr-sm"
-              )}>
-                {message.role === "assistant" ? (
-                  <MarkdownRenderer content={message.content} className="text-sm" />
-                ) : (
-                  <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
-                )}
-              </div>
+                <div className={cn(
+                  "w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0",
+                  message.role === "assistant"
+                    ? "bg-gradient-to-br from-primary to-secondary"
+                    : "bg-muted"
+                )}>
+                  {message.role === "assistant" ? (
+                    <Bot className="h-4 w-4 text-primary-foreground" />
+                  ) : (
+                    <User className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </div>
+
+                <div className={cn(
+                  "max-w-[80%] p-3 rounded-2xl",
+                  message.role === "assistant"
+                    ? "bg-muted rounded-tl-sm"
+                    : "bg-primary text-primary-foreground rounded-tr-sm"
+                )}>
+                  {message.role === "assistant" ? (
+                    <MarkdownRenderer content={message.content} className="text-sm" />
+                  ) : (
+                    <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                  )}
+                </div>
               </div>
             );
           })}
@@ -226,8 +218,8 @@ export default function Chat() {
               className="flex-1 bg-muted/50 border-0"
               disabled={isLoading}
             />
-            <Button 
-              size="icon" 
+            <Button
+              size="icon"
               onClick={handleSend}
               disabled={!input.trim() || isLoading}
               className="bg-gradient-to-r from-primary to-secondary hover:opacity-90"

@@ -1,42 +1,57 @@
 <!doctype html>
 <html lang="pt-BR">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    
-    <title>ZOE Church - Sua vida espiritual em um só lugar</title>
-    <meta name="description" content="Bíblia Sagrada, Harpa Cristã, Devocionais, Planos de Leitura e muito mais para sua vida espiritual" />
-    <meta name="author" content="ZOE Church" />
-    
-    <!-- PWA Meta Tags -->
-    <meta name="theme-color" content="#4F46E5" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="ZOE Church" />
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="application-name" content="ZOE Church" />
-    <meta name="msapplication-TileColor" content="#4F46E5" />
-    
-    <!-- Icons -->
-    <link rel="icon" type="image/png" href="/icons/icon-192x192.png" />
-    <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-192x192.png" />
-    
-    <!-- Open Graph -->
-    <meta property="og:title" content="ZOE Church App" />
-    <meta property="og:description" content="Sua vida espiritual em um só lugar - Bíblia, Harpa Cristã, Devocionais e mais" />
-    <meta property="og:type" content="website" />
-    <meta property="og:image" content="/icons/icon-512x512.png" />
-    <meta property="og:locale" content="pt_BR" />
-    
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="ZOE Church App" />
-    <meta name="twitter:description" content="Sua vida espiritual em um só lugar" />
-    <meta name="twitter:image" content="/icons/icon-512x512.png" />
-  </head>
 
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+
+  <title>ZOE Church - Sua vida espiritual em um só lugar</title>
+  <meta name="description"
+    content="Bíblia Sagrada, Harpa Cristã, Devocionais, Planos de Leitura e muito mais para sua vida espiritual" />
+  <meta name="author" content="ZOE Church" />
+
+  <!-- PWA Meta Tags -->
+  <meta name="theme-color" content="#4F46E5" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="ZOE Church" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="application-name" content="ZOE Church" />
+  <meta name="msapplication-TileColor" content="#4F46E5" />
+
+  <!-- Icons -->
+  <link rel="icon" type="image/png" href="/icons/icon-192x192.png" />
+  <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-192x192.png" />
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="ZOE Church App" />
+  <meta property="og:description"
+    content="Sua vida espiritual em um só lugar - Bíblia, Harpa Cristã, Devocionais e mais" />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="/icons/icon-512x512.png" />
+  <meta property="og:locale" content="pt_BR" />
+
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="ZOE Church App" />
+  <meta name="twitter:description" content="Sua vida espiritual em um só lugar" />
+  <meta name="twitter:image" content="/icons/icon-512x512.png" />
+</head>
+
+<body>
+  <div id="root"></div>
+
+  <script>
+    console.log('=== INLINE SCRIPT EXECUTED ===');
+    console.log('Root element:', document.getElementById('root'));
+    window.addEventListener('error', function (e) {
+      console.error('=== GLOBAL ERROR ===', e);
+      document.body.innerHTML = '<h1 style="color:red;padding:20px">ERROR: ' + e.message + '</h1>';
+    });
+  </script>
+
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+
 </html>

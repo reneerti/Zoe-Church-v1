@@ -15,9 +15,9 @@ interface HeaderProps {
   showLogo?: boolean;
 }
 
-export function Header({ 
-  title = "ZOE CHURCH", 
-  showSearch = false, 
+export function Header({
+  title = "ZOE CHURCH",
+  showSearch = false,
   showNotifications = true,
   showMenu = false,
   className,
@@ -26,7 +26,7 @@ export function Header({
 }: HeaderProps) {
   const navigate = useNavigate();
   const { unreadCount } = useNotificationListener();
-  
+
   return (
     <header className={cn(
       "sticky top-0 z-40 w-full safe-area-inset-top",
@@ -40,31 +40,27 @@ export function Header({
               <Menu className="h-5 w-5" />
             </Button>
           )}
-          {showLogo ? (
-            <img src={logoZoe} alt="Zoe Church" className="h-8 w-auto" />
-          ) : (
-            <h1 className="font-bold text-lg tracking-tight">{title}</h1>
-          )}
+          <img src="/zoe-logo-small.png" alt="Zoe" className="h-7 w-auto" />
         </div>
-        
+
         <div className="flex items-center gap-1">
           {showSearch && (
             <Button variant="ghost" size="icon" className="h-9 w-9">
               <Search className="h-5 w-5" />
             </Button>
           )}
-          <Button 
-            variant="ghost" 
-            size="icon" 
+          <Button
+            variant="ghost"
+            size="icon"
             className="h-9 w-9 text-primary"
             onClick={() => navigate('/chat')}
           >
             <Sparkles className="h-5 w-5" />
           </Button>
           {showNotifications && (
-            <Button 
-              variant="ghost" 
-              size="icon" 
+            <Button
+              variant="ghost"
+              size="icon"
               className="h-9 w-9 relative"
               onClick={() => navigate('/notificacoes')}
             >

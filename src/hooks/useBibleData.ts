@@ -46,6 +46,9 @@ export function useBibleVersions() {
       }
       return data as BibleVersion[];
     },
+    // Bible versions are immutable - cache forever
+    staleTime: Infinity,
+    gcTime: Infinity,
   });
 }
 
@@ -61,6 +64,9 @@ export function useBibleBooks() {
       }
       return data as BibleBook[];
     },
+    // Bible books are immutable - cache forever
+    staleTime: Infinity,
+    gcTime: Infinity,
   });
 }
 
@@ -82,6 +88,9 @@ export function useBibleBookByName(bookName: string) {
       return data as BibleBook;
     },
     enabled: !!bookName,
+    // Bible books are immutable - cache forever
+    staleTime: Infinity,
+    gcTime: Infinity,
   });
 }
 
@@ -105,6 +114,9 @@ export function useBibleVerses(bookId: string, chapter: number, versionId: strin
       return data as BibleVerse[];
     },
     enabled: !!bookId && !!chapter && !!versionId,
+    // Bible verses are immutable - cache forever
+    staleTime: Infinity,
+    gcTime: Infinity,
   });
 }
 
@@ -141,6 +153,9 @@ export function useBibleVersesByVersionCode(bookId: string, chapter: number, ver
       return data as BibleVerse[];
     },
     enabled: !!bookId && !!chapter && !!versionCode,
+    // Bible verses are immutable - cache forever
+    staleTime: Infinity,
+    gcTime: Infinity,
   });
 }
 
@@ -158,28 +173,14 @@ export function useBibleVersionByCode(code: string) {
       return data as BibleVersion;
     },
     enabled: !!code,
-  });
-}
-
-export function useReadingProgress(userId?: string) {
-  return useQuery({
-    queryKey: ["reading-progress", userId],
-    queryFn: async () => {
-      if (!userId) return [];
-
-      const { data, error } = await supabase.from("reading_progress").select("*").eq("user_id", userId);
-
-      if (error) {
-        console.error("Erro ao buscar progresso:", error);
-        throw error;
-      }
-      return data as ReadingProgress[];
-    },
-    enabled: !!userId,
+    // Bible versions are immutable - cache forever
+    staleTime: Infinity,
+    gcTime: Infinity,
   });
 }
 
 // Buscar busca por texto (usando texto_normalizado ou texto_tsv)
+// Note: Reading progress has been moved to useReadingProgressData.ts
 export function useSearchBibleVerses(searchTerm: string, versionCode?: string) {
   return useQuery({
     queryKey: ["bible-search", searchTerm, versionCode],

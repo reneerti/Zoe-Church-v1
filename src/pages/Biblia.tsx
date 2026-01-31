@@ -9,11 +9,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   useBibleBooks,
   useBibleVersions,
-  useReadingProgress,
   getReadingIntensity,
   getIntensityColor,
   getIntensityBorder,
 } from "@/hooks/useBibleData";
+import { useReadingProgressData } from "@/hooks/useReadingProgressData";
 import { supabase } from "@/integrations/supabase/client";
 
 export default function Biblia() {
@@ -35,7 +35,7 @@ export default function Biblia() {
 
   const { data: versions = [], isLoading: loadingVersions, error: versionsError } = useBibleVersions();
   const { data: books = [], isLoading: loadingBooks, error: booksError } = useBibleBooks();
-  const { data: progress = [] } = useReadingProgress(userId);
+  const { data: progress = [] } = useReadingProgressData();
 
   // Debug: verificar se os dados estão sendo carregados
   console.log("Versions:", versions, "Loading:", loadingVersions, "Error:", versionsError);
@@ -84,7 +84,7 @@ export default function Biblia() {
             <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => navigate(-1)}>
               <ChevronLeft className="h-5 w-5" />
             </Button>
-            <h1 className="font-bold text-lg">Bíblia Sagrada</h1>
+            <img src="/zoe-logo-small.png" alt="Zoe" className="h-6 w-auto" />
           </div>
 
           <div className="flex items-center gap-1">
@@ -96,10 +96,10 @@ export default function Biblia() {
                 {(versions.length > 0
                   ? versions
                   : [
-                      { id: "1", code: "NVI", name: "NVI" },
-                      { id: "2", code: "NTLH", name: "NTLH" },
-                      { id: "3", code: "ARA", name: "ARA" },
-                    ]
+                    { id: "1", code: "NVI", name: "NVI" },
+                    { id: "2", code: "NTLH", name: "NTLH" },
+                    { id: "3", code: "ARA", name: "ARA" },
+                  ]
                 ).map((v) => (
                   <SelectItem key={v.code} value={v.code}>
                     {v.code}
@@ -245,7 +245,7 @@ export default function Biblia() {
                         <button
                           key={book.id}
                           onClick={() => navigate(`/biblia/${book.abbreviation.toLowerCase()}`)}
-                        
+
                           className={cn(
                             "p-3 rounded-xl text-left transition-all duration-300",
                             "border-2 hover:shadow-md active:scale-[0.98]",

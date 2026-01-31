@@ -1,11 +1,18 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { NetworkProvider } from "@/contexts/NetworkContext";
 import { TermosMiddleware } from "@/components/TermosMiddleware";
-import { ProtectedRoute, SuperUserRoute, MasterRoute, AuthenticatedRoute } from "@/components/auth/ProtectedRoute";
+import { ProtectedRoute, MasterRoute } from "@/components/auth/ProtectedRoute";
+import { NetworkStatus } from "@/components/NetworkStatus";
+import { SyncIndicator } from "@/components/SyncIndicator";
+import { queryClient } from "@/lib/queryClient";
+import { SyncService } from "@/services/syncService";
+import { useEffect } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
 import Biblia from "./pages/Biblia";
 import LivroCapitulos from "./pages/LivroCapitulos";
@@ -21,14 +28,7 @@ import Videos from "./pages/Videos";
 import Lideranca from "./pages/Lideranca";
 import NovosConvertidos from "./pages/NovosConvertidos";
 import Perfil from "./pages/Perfil";
-import Auth from "./pages/Auth";
 import Chat from "./pages/Chat";
-import NotFound from "./pages/NotFound";
-import AdminImport from "./pages/AdminImport";
-import AdminDashboard from "./pages/admin/Dashboard";
-import AdminConvites from "./pages/admin/Convites";
-import AdminAuditLog from "./pages/admin/AuditLog";
-import AceitarConvite from "./pages/AceitarConvite";
 import MasterDashboard from "./pages/master/Dashboard";
 import MasterPlanos from "./pages/master/Planos";
 import MasterNotificacoes from "./pages/master/Notificacoes";
@@ -37,64 +37,72 @@ import MeusPlanos from "./pages/MeusPlanos";
 import EntrarPlano from "./pages/EntrarPlano";
 import Notificacoes from "./pages/Notificacoes";
 import Instalar from "./pages/Instalar";
+import Login from "./pages/Login";
+import AdminDashboard from "./pages/admin/Dashboard";
 
-const queryClient = new QueryClient();
+const SyncInitializer = () => {
+  const { user } = useAuth();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AuthProvider>
-          <TermosMiddleware>
-            <Routes>
-              {/* Public Routes */}
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/termos" element={<TermosAceite />} />
-              <Route path="/convite/:codigo" element={<AceitarConvite />} />
-              <Route path="/instalar" element={<Instalar />} />
-              
-              {/* Authenticated Routes - Any logged user */}
-              <Route path="/" element={<AuthenticatedRoute><Index /></AuthenticatedRoute>} />
-              <Route path="/biblia" element={<AuthenticatedRoute><Biblia /></AuthenticatedRoute>} />
-              <Route path="/biblia/busca" element={<AuthenticatedRoute><BuscaBiblia /></AuthenticatedRoute>} />
-              <Route path="/biblia/:bookId" element={<AuthenticatedRoute><LivroCapitulos /></AuthenticatedRoute>} />
-              <Route path="/biblia/:bookId/:chapter" element={<AuthenticatedRoute><LeituraCapitulo /></AuthenticatedRoute>} />
-              <Route path="/harpa" element={<AuthenticatedRoute><Harpa /></AuthenticatedRoute>} />
-              <Route path="/harpa/:numero" element={<AuthenticatedRoute><HinoDetalhes /></AuthenticatedRoute>} />
-              <Route path="/harpa/:numero/apresentar" element={<AuthenticatedRoute><HinoApresentacao /></AuthenticatedRoute>} />
-              <Route path="/agenda" element={<AuthenticatedRoute><Agenda /></AuthenticatedRoute>} />
-              <Route path="/devocional" element={<AuthenticatedRoute><Devocional /></AuthenticatedRoute>} />
-              <Route path="/ofertas" element={<AuthenticatedRoute><Ofertas /></AuthenticatedRoute>} />
-              <Route path="/videos" element={<AuthenticatedRoute><Videos /></AuthenticatedRoute>} />
-              <Route path="/lideranca" element={<AuthenticatedRoute><Lideranca /></AuthenticatedRoute>} />
-              <Route path="/novos-convertidos" element={<AuthenticatedRoute><NovosConvertidos /></AuthenticatedRoute>} />
-              <Route path="/perfil" element={<AuthenticatedRoute><Perfil /></AuthenticatedRoute>} />
-              <Route path="/chat" element={<AuthenticatedRoute><Chat /></AuthenticatedRoute>} />
-              <Route path="/planos" element={<AuthenticatedRoute><MeusPlanos /></AuthenticatedRoute>} />
-              <Route path="/planos/entrar" element={<AuthenticatedRoute><EntrarPlano /></AuthenticatedRoute>} />
-              <Route path="/planos/entrar/:codigo" element={<AuthenticatedRoute><EntrarPlano /></AuthenticatedRoute>} />
-              <Route path="/notificacoes" element={<AuthenticatedRoute><Notificacoes /></AuthenticatedRoute>} />
-              
-              {/* Super User Routes */}
-              <Route path="/admin" element={<SuperUserRoute><AdminDashboard /></SuperUserRoute>} />
-              <Route path="/admin/import" element={<SuperUserRoute><AdminImport /></SuperUserRoute>} />
-              <Route path="/admin/unidade/:unidadeId/convites" element={<SuperUserRoute><AdminConvites /></SuperUserRoute>} />
-              <Route path="/admin/audit" element={<SuperUserRoute><AdminAuditLog /></SuperUserRoute>} />
-              
-              {/* Master Routes */}
-              <Route path="/:slug/painel" element={<MasterRoute><MasterDashboard /></MasterRoute>} />
-              <Route path="/:slug/painel/planos" element={<MasterRoute><MasterPlanos /></MasterRoute>} />
-              <Route path="/:slug/painel/notificacoes" element={<MasterRoute><MasterNotificacoes /></MasterRoute>} />
-              
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </TermosMiddleware>
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+  useEffect(() => {
+    if (user?.id) {
+      SyncService.initialize(user.id);
+      return () => {
+        SyncService.cleanup();
+      };
+    }
+  }, [user?.id]);
+
+  return null;
+};
+
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AuthProvider>
+            <NetworkProvider>
+              <SyncInitializer />
+              <NetworkStatus />
+              <SyncIndicator />
+              <TermosMiddleware>
+                <Routes>
+                  <Route path="/termos-aceite" element={<TermosAceite />} />
+                  <Route path="/instalar" element={<Instalar />} />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/" element={<Index />} />
+                  <Route path="/biblia" element={<Biblia />} />
+                  <Route path="/biblia/:livro" element={<LivroCapitulos />} />
+                  <Route path="/biblia/:livro/:capitulo" element={<LeituraCapitulo />} />
+                  <Route path="/biblia/busca" element={<BuscaBiblia />} />
+                  <Route path="/harpa" element={<Harpa />} />
+                  <Route path="/harpa/:numero" element={<HinoDetalhes />} />
+                  <Route path="/harpa/:numero/apresentacao" element={<HinoApresentacao />} />
+                  <Route path="/agenda" element={<Agenda />} />
+                  <Route path="/devocional" element={<Devocional />} />
+                  <Route path="/ofertas" element={<Ofertas />} />
+                  <Route path="/videos" element={<Videos />} />
+                  <Route path="/lideranca" element={<Lideranca />} />
+                  <Route path="/convertidos" element={<NovosConvertidos />} />
+                  <Route path="/perfil" element={<Perfil />} />
+                  <Route path="/chat" element={<Chat />} />
+                  <Route path="/meus-planos" element={<MeusPlanos />} />
+                  <Route path="/plano/:id" element={<EntrarPlano />} />
+                  <Route path="/notificacoes" element={<Notificacoes />} />
+                  <Route path="/master/dashboard" element={<MasterDashboard />} />
+                  <Route path="/master/planos" element={<MasterPlanos />} />
+                  <Route path="/master/notificacoes" element={<MasterNotificacoes />} />
+                  <Route path="/admin/dashboard" element={<AdminDashboard />} />
+                </Routes>
+              </TermosMiddleware>
+            </NetworkProvider>
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+}
 
 export default App;

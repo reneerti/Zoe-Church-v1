@@ -2,7 +2,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BottomNav } from "@/components/layout/BottomNav";
-import { useBibleBooks, useReadingProgress, getReadingIntensity, getIntensityColor, getIntensityBorder } from "@/hooks/useBibleData";
+import { useBibleBooks, getReadingIntensity, getIntensityColor, getIntensityBorder } from "@/hooks/useBibleData";
+import { useReadingProgressData } from "@/hooks/useReadingProgressData";
 import { useAuth } from "@/contexts/AuthContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -12,7 +13,7 @@ export default function LivroCapitulos() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { data: books, isLoading: booksLoading } = useBibleBooks();
-  const { data: readingProgress } = useReadingProgress(user?.id);
+  const { data: readingProgress } = useReadingProgressData();
 
   const book = books?.find(
     (b) => b.abbreviation.toLowerCase() === bookId?.toLowerCase()

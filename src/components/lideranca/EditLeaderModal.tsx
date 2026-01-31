@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2, Upload, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import InputMask from "react-input-mask";
 
 type Leader = {
   id: string;
@@ -27,6 +28,8 @@ interface EditLeaderModalProps {
 export function EditLeaderModal({ leader, open, onOpenChange, onSave }: EditLeaderModalProps) {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [formData, setFormData] = useState({
     nome: "",
     cargo: "",
@@ -47,10 +50,12 @@ export function EditLeaderModal({ leader, open, onOpenChange, onSave }: EditLead
         foto_url: leader.foto_url || "",
         ordem: leader.ordem || 1,
       });
+      setPhotoPreview(leader.foto_url);
+      setPhotoFile(null);
     }
   }, [leader, open]);
 
-  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -66,15 +71,27 @@ export function EditLeaderModal({ leader, open, onOpenChange, onSave }: EditLead
       return;
     }
 
+    // Create preview
+    const reader = new FileReader();
+    reader.onload = () => {
+      setPhotoPreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+    setPhotoFile(file);
+  };
+
+  const uploadPhoto = async (): Promise<string | null> => {
+    if (!photoFile || !leader?.id) return null;
+
     setUploading(true);
     try {
-      const fileExt = file.name.split(".").pop();
-      const fileName = `${leader?.id || "new"}-${Date.now()}.${fileExt}`;
+      const fileExt = photoFile.name.split(".").pop();
+      const fileName = `${leader.id}-${Date.now()}.${fileExt}`;
       const filePath = `lideranca/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from("avatars")
-        .upload(filePath, file, { upsert: true });
+        .upload(filePath, photoFile, { upsert: true });
 
       if (uploadError) throw uploadError;
 
@@ -82,11 +99,11 @@ export function EditLeaderModal({ leader, open, onOpenChange, onSave }: EditLead
         .from("avatars")
         .getPublicUrl(filePath);
 
-      setFormData(prev => ({ ...prev, foto_url: publicUrl }));
-      toast.success("Foto enviada com sucesso!");
+      return publicUrl;
     } catch (error) {
       console.error("Upload error:", error);
       toast.error("Erro ao enviar foto");
+      return null;
     } finally {
       setUploading(false);
     }
@@ -105,8 +122,24 @@ export function EditLeaderModal({ leader, open, onOpenChange, onSave }: EditLead
       return;
     }
 
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email.trim())) {
+      toast.error("E-mail inválido");
+      return;
+    }
+
     setLoading(true);
     try {
+      // Upload photo if a new one was selected
+      let photoUrl = formData.foto_url;
+      if (photoFile) {
+        const uploadedUrl = await uploadPhoto();
+        if (uploadedUrl) {
+          photoUrl = uploadedUrl;
+        }
+      }
+
       const { error } = await supabase
         .from("masters")
         .update({
@@ -114,7 +147,7 @@ export function EditLeaderModal({ leader, open, onOpenChange, onSave }: EditLead
           cargo: formData.cargo.trim() || null,
           email: formData.email.trim(),
           telefone: formData.telefone.trim() || null,
-          foto_url: formData.foto_url || null,
+          foto_url: photoUrl || null,
           ordem: formData.ordem || 1,
         })
         .eq("id", leader.id);
@@ -143,10 +176,10 @@ export function EditLeaderModal({ leader, open, onOpenChange, onSave }: EditLead
           {/* Photo Upload */}
           <div className="flex flex-col items-center gap-3">
             <div className="w-24 h-24 rounded-full overflow-hidden bg-muted flex items-center justify-center border-2 border-dashed border-border">
-              {formData.foto_url ? (
-                <img 
-                  src={formData.foto_url} 
-                  alt={formData.nome} 
+              {photoPreview ? (
+                <img
+                  src={photoPreview}
+                  alt={formData.nome}
                   className="w-full h-full object-cover"
                 />
               ) : (
@@ -160,17 +193,31 @@ export function EditLeaderModal({ leader, open, onOpenChange, onSave }: EditLead
                 ) : (
                   <Upload className="h-4 w-4" />
                 )}
-                {uploading ? "Enviando..." : "Alterar foto"}
+                {uploading ? "Enviando..." : photoPreview ? "Alterar foto" : "Adicionar foto"}
               </div>
               <Input
                 id="photo-upload"
                 type="file"
                 accept="image/*"
                 className="hidden"
-                onChange={handlePhotoUpload}
-                disabled={uploading}
+                onChange={handlePhotoSelect}
+                disabled={uploading || loading}
               />
             </Label>
+            {photoPreview && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setPhotoPreview(null);
+                  setPhotoFile(null);
+                  setFormData(prev => ({ ...prev, foto_url: "" }));
+                }}
+                disabled={loading}
+              >
+                Remover foto
+              </Button>
+            )}
           </div>
 
           {/* Form Fields */}
@@ -211,13 +258,20 @@ export function EditLeaderModal({ leader, open, onOpenChange, onSave }: EditLead
 
             <div>
               <Label htmlFor="telefone">Telefone / WhatsApp</Label>
-              <Input
-                id="telefone"
+              <InputMask
+                mask="(99) 99999-9999"
                 value={formData.telefone}
                 onChange={(e) => setFormData(prev => ({ ...prev, telefone: e.target.value }))}
-                placeholder="(00) 00000-0000"
-                maxLength={20}
-              />
+                disabled={loading}
+              >
+                {(inputProps: any) => (
+                  <Input
+                    {...inputProps}
+                    id="telefone"
+                    placeholder="(00) 00000-0000"
+                  />
+                )}
+              </InputMask>
             </div>
 
             <div>
